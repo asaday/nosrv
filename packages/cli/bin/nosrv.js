@@ -4,6 +4,7 @@ import { existsSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import packageManifest from "../package.json" with { type: "json" };
 import { loadConfig, projectName, resolveApp, resolvePermissions } from "./project.js";
 import {
   deployPlatform,
@@ -20,7 +21,7 @@ import { runGoogleDeploy } from "./targets/google-functions.js";
 import { runLambdaDeploy } from "./targets/lambda.js";
 import { runNetlifyDeploy } from "./targets/netlify.js";
 
-const usage = `nosrv v0.1.0
+const usage = `nosrv v${packageManifest.version}
 
 Usage:
   nosrv create <directory> [--template <basic|react>]
@@ -60,7 +61,7 @@ async function createProject(directoryArgument, template = "basic") {
   const usesCheckout = existsSync(resolve(checkoutCore, "package.json"));
   const coreDependency = usesCheckout
     ? `file:${relative(directory, checkoutCore).split(sep).join("/")}`
-    : "^0.1.0";
+    : `^${packageManifest.version}`;
   const localCliCommand = (command) => `node ${JSON.stringify(cliPath)} ${command}`;
   const scripts = {
     dev: usesCheckout ? localCliCommand("dev") : "nosrv dev",

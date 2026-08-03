@@ -9,6 +9,15 @@ import { promisify } from "node:util";
 const exec = promisify(execFile);
 const cli = resolve("packages/cli/bin/nosrv.js");
 
+test("CLI help reports the package version", async () => {
+  const manifest = JSON.parse(await readFile(resolve("packages/cli/package.json"), "utf8"));
+  const result = await exec(process.execPath, [cli, "--help"]);
+  assert.match(
+    result.stdout,
+    new RegExp(`^nosrv v${manifest.version.replaceAll(".", "\\.")}$`, "m"),
+  );
+});
+
 test("create produces an installable App from a source checkout", async () => {
   const parent = await mkdtemp(resolve(tmpdir(), "nosrv-create-"));
   const app = resolve(parent, "hello");

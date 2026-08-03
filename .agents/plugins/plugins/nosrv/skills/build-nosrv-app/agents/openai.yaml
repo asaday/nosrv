@@ -1,0 +1,4 @@
+interface:
+  display_name: "Build nosrv App"
+  short_description: "Build manageable portable Web Apps and scheduled tasks"
+  default_prompt: "Use $build-nosrv-app to evaluate and build a small service for shared self-hosted or public FaaS deployment."

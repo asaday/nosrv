@@ -1,0 +1,7 @@
+name: database-raw-sqlite
+
+providers:
+  node:
+    db:
+      provider: sqlite
+      file: .nosrv/database.sqlite

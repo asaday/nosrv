@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>nosrv full configuration</title>
+  </head>
+  <body>
+    <main>
+      <h1>nosrv full configuration</h1>
+      <p>This runnable App keeps every supported setting visible in <code>nosrv.yaml</code>.</p>
+      <pre id="result">Loading…</pre>
+    </main>
+    <script type="module">
+      const response = await fetch("api/config");
+      document.querySelector("#result").textContent = JSON.stringify(
+        await response.json(),
+        null,
+        2,
+      );
+    </script>
+  </body>
+</html>

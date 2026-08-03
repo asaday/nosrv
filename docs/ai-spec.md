@@ -1,0 +1,1 @@
+../packages/cli/spec/ai-spec.md

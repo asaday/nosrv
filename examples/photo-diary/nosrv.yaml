@@ -1,0 +1,20 @@
+name: photo-diary
+
+meta:
+  description: Save photos with short diary entries.
+  icon: 📷
+
+providers:
+  node:
+    db:
+      provider: sqlite
+      file: .nosrv/diary.sqlite
+    storage:
+      provider: filesystem
+      directory: .nosrv/photos
+  cloudflare:
+    db:
+      database: nosrv-photo-diary
+      id: local-nosrv-photo-diary
+    storage:
+      bucket: nosrv-photo-diary

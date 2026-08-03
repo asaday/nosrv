@@ -1,0 +1,39 @@
+{
+  "name": "nosrv-workspace",
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "nosrv": "./packages/cli/bin/nosrv.js"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "workspaces": [
+    "packages/*",
+    "examples/*",
+    "examples/database/raw-sql/*"
+  ],
+  "scripts": {
+    "build": "node tools/build-packages.js",
+    "clean": "node -e \"const fs=require('node:fs'); for(const d of fs.readdirSync('packages')) fs.rmSync('packages/'+d+'/dist',{recursive:true,force:true})\"",
+    "dev": "nosrv dev",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "release:check": "npm run format:check && npm run build && npm run typecheck && npm test && node tools/check-release.js",
+    "release:sync": "node tools/sync-release-version.js && npm install --package-lock-only --ignore-scripts",
+    "release:publish": "node tools/publish-packages.js",
+    "test": "node --test test/**/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260717.1",
+    "@google-cloud/functions-framework": "^5.0.5",
+    "@types/aws-lambda": "^8.10.162",
+    "@types/node": "^24.0.0",
+    "prettier": "^3.9.5",
+    "typescript": "^5.8.0",
+    "wrangler": "^4.112.0"
+  }
+}

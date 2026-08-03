@@ -1,0 +1,15 @@
+{
+  "name": "@nosrv/example-key-value",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nosrv dev",
+    "dev:cloudflare": "nosrv dev --target cloudflare",
+    "dev:google": "nosrv dev --target google-functions",
+    "dev:lambda": "nosrv dev --target lambda",
+    "deploy": "nosrv deploy"
+  },
+  "dependencies": {
+    "@nosrv/core": "0.1.0"
+  }
+}

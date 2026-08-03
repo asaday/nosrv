@@ -1,0 +1,11 @@
+{
+  "name": "@nosrv/example-database-raw-d1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nosrv dev --target cloudflare"
+  },
+  "dependencies": {
+    "@nosrv/core": "0.1.0"
+  }
+}

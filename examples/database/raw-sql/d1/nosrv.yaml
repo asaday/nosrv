@@ -1,0 +1,7 @@
+name: database-raw-d1
+
+providers:
+  cloudflare:
+    db:
+      database: nosrv-raw-d1
+      id: local-nosrv-raw-d1

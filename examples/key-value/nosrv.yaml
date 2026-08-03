@@ -1,0 +1,12 @@
+providers:
+  cloudflare:
+    kv:
+      id: local-nosrv-kv
+
+  lambda:
+    kv:
+      table: nosrv-kv
+
+  google-functions:
+    kv:
+      collection: nosrv-kv

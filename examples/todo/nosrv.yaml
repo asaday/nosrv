@@ -1,0 +1,23 @@
+name: todo
+
+meta:
+  description: A small task list backed by portable relational CRUD.
+  icon: ✅
+
+providers:
+  node:
+    db:
+      provider: sqlite
+      file: .nosrv/todo.sqlite
+  cloudflare:
+    db:
+      database: nosrv-todo
+      id: local-nosrv-todo
+  google-functions:
+    db:
+      urlEnv: DATABASE_URL
+      appId: nosrv-todo
+  lambda:
+    db:
+      urlEnv: DATABASE_URL
+      appId: nosrv-todo

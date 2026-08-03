@@ -1,0 +1,20 @@
+{
+  "name": "nosrv",
+  "interface": {
+    "displayName": "Nosrv"
+  },
+  "plugins": [
+    {
+      "name": "nosrv",
+      "source": {
+        "source": "local",
+        "path": "./plugins/nosrv"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}

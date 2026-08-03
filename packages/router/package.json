@@ -1,0 +1,40 @@
+{
+  "name": "@nosrv/router",
+  "version": "0.1.0",
+  "description": "Web Standard HTTP request router for nosrv applications",
+  "license": "Apache-2.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/asaday/nosrv.git",
+    "directory": "packages/router"
+  },
+  "homepage": "https://github.com/asaday/nosrv#readme",
+  "bugs": {
+    "url": "https://github.com/asaday/nosrv/issues"
+  },
+  "keywords": [
+    "nosrv",
+    "router",
+    "http",
+    "web-standard",
+    "serverless"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@nosrv/core": "0.1.0"
+  }
+}

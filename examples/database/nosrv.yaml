@@ -1,0 +1,22 @@
+name: database-example
+
+providers:
+  node:
+    db:
+      provider: sqlite
+      file: .nosrv/database.sqlite
+
+  cloudflare:
+    db:
+      database: nosrv-example
+      id: local-nosrv-db
+
+  google-functions:
+    db:
+      urlEnv: DATABASE_URL
+      appId: database-example
+
+  lambda:
+    db:
+      urlEnv: DATABASE_URL
+      appId: database-example

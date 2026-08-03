@@ -1,0 +1,37 @@
+{
+  "name": "@nosrv/core",
+  "version": "0.1.0",
+  "description": "Portable application contract and capability APIs for nosrv",
+  "license": "Apache-2.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/asaday/nosrv.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://github.com/asaday/nosrv#readme",
+  "bugs": {
+    "url": "https://github.com/asaday/nosrv/issues"
+  },
+  "keywords": [
+    "nosrv",
+    "serverless",
+    "faas",
+    "portable",
+    "web-standard"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

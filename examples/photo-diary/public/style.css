@@ -1,0 +1,67 @@
+:root {
+  font-family: Inter, ui-sans-serif, system-ui;
+  color: #302b26;
+  background: #f3efe8;
+}
+body {
+  margin: 0;
+}
+main {
+  max-width: 760px;
+  margin: 42px auto;
+  padding: 0 20px;
+}
+h1 {
+  font:
+    2.8rem Georgia,
+    serif;
+  margin-bottom: 4px;
+}
+header p {
+  color: #786f68;
+}
+form,
+article {
+  background: #fff;
+  padding: 20px;
+  border-radius: 14px;
+  margin: 20px 0;
+  box-shadow: 0 2px 14px #0001;
+}
+textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 100px;
+  padding: 12px;
+  border: 1px solid #d2cbc4;
+  border-radius: 8px;
+  font: inherit;
+  margin-bottom: 12px;
+}
+label {
+  display: block;
+  color: #675e57;
+  margin-bottom: 14px;
+}
+button {
+  padding: 10px 15px;
+  border: 0;
+  border-radius: 8px;
+  background: #57483d;
+  color: #fff;
+  cursor: pointer;
+}
+article img {
+  width: 100%;
+  max-height: 480px;
+  object-fit: cover;
+  border-radius: 9px;
+  margin-top: 10px;
+}
+small {
+  color: #786f68;
+}
+.delete {
+  float: right;
+  background: #a5483d;
+}

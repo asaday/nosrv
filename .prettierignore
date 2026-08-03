@@ -1,0 +1,8 @@
+.agents/
+.codex/
+.nosrv/
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+docs/images/

@@ -1,0 +1,9 @@
+{
+  "name": "nosrv-example-static-site",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nosrv dev",
+    "deploy": "nosrv deploy"
+  }
+}

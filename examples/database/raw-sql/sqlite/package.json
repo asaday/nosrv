@@ -1,0 +1,11 @@
+{
+  "name": "@nosrv/example-database-raw-sqlite",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nosrv dev"
+  },
+  "dependencies": {
+    "@nosrv/core": "0.1.0"
+  }
+}

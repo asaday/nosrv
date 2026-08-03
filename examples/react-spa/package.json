@@ -1,0 +1,23 @@
+{
+  "name": "@nosrv/example-react-spa",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nosrv dev",
+    "dev:web": "vite",
+    "build": "vite build",
+    "deploy": "nosrv deploy"
+  },
+  "dependencies": {
+    "@nosrv/core": "0.1.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^6.0.3",
+    "vite": "^8.1.5"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

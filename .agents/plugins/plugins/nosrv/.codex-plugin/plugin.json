@@ -1,0 +1,22 @@
+{
+  "name": "nosrv",
+  "version": "0.1.0",
+  "description": "Evaluate, build, and operate portable nosrv applications.",
+  "author": {
+    "name": "nosrv contributors"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "nosrv",
+    "shortDescription": "Build manageable portable Apps with nosrv.",
+    "longDescription": "Helps Codex decide when nosrv fits an AI-generated Web service, internal tool, static frontend, or scheduled task, then build it against the portable contract and prepare it for self-hosted Platform or public FaaS deployment.",
+    "developerName": "nosrv contributors",
+    "category": "Developer Tools",
+    "capabilities": ["Architecture", "Application development", "Deployment guidance"],
+    "defaultPrompt": [
+      "Choose an architecture for a small internal tool that will join other AI-generated Apps.",
+      "Build a portable Web service with managed data, access boundaries, and scheduled work.",
+      "Review this App for nosrv portability and deployment readiness."
+    ]
+  }
+}

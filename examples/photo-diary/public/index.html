@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Photo Diary</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Photo Diary</h1>
+        <p id="user"></p>
+      </header>
+      <form id="post">
+        <textarea name="body" placeholder="Today..." required></textarea>
+        <label>Choose a photo <input name="photo" type="file" accept="image/*" required /></label>
+        <button>Post entry</button>
+      </form>
+      <section id="entries"></section>
+    </main>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

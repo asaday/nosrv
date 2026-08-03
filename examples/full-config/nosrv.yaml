@@ -1,0 +1,109 @@
+# Full configuration reference. Most Apps should omit values that match defaults.
+
+name: full-config
+app: ./app.ts
+route: /full-config
+
+meta:
+  description: Runnable reference for every nosrv.yaml option.
+  icon: 🧩
+
+spa: false
+
+# Files under resources/ are packaged and readable through ctx.resources, but never served publicly.
+
+# Non-secret defaults exposed through ctx.env. Shell, .env, and Platform settings override these.
+env:
+  APP_MODE: development
+
+dev:
+  host: 127.0.0.1
+  port: 8787
+
+# Self-hosted Apps may request selected host paths:
+# permissions:
+#   filesystem:
+#     read: [/srv/reports]
+#     write: []
+# Use permissions: "*" only for fully trusted administration Apps.
+
+# Ask the deployment target to authenticate requests before they reach the App.
+# auth:
+#   mode: required
+
+schedules:
+  - name: daily-cleanup
+    cron: "0 3 * * *"
+
+providers:
+  node:
+    db:
+      provider: sqlite
+      file: .nosrv/database.sqlite
+      # For external PostgreSQL instead:
+      # provider: postgres
+      # urlEnv: DATABASE_URL
+      # appId: full-config
+    kv:
+      # provider: sqlite # Optional; the Node default.
+      file: .nosrv/kv.sqlite
+      # Redis is selected by the self-hosted Platform operator, not per App:
+      # NOSRV_PLATFORM_KV_BACKEND=redis
+      # NOSRV_PLATFORM_REDIS_URL=redis://redis:6379
+    storage:
+      # provider: filesystem # Optional; the Node default.
+      directory: .nosrv/storage
+
+  cloudflare:
+    db:
+      # provider: d1 # Optional; the Cloudflare default.
+      database: full-config
+      id: replace-with-d1-database-id
+    kv:
+      # provider: workers-kv # Optional; the Cloudflare default.
+      id: replace-with-kv-namespace-id
+    storage:
+      # provider: r2 # Optional; the Cloudflare default.
+      bucket: full-config
+  lambda:
+    # db:
+    #   provider: postgres # Optional; the Lambda default.
+    #   urlEnv: DATABASE_URL
+    #   appId: full-config
+    kv:
+      # provider: dynamodb # Optional; the Lambda default.
+      table: full-config-kv
+    storage:
+      # provider: s3 # Optional; the Lambda default.
+      bucket: full-config-storage
+
+  google-functions:
+    # db:
+    #   provider: postgres # Optional; the Google Functions default.
+    #   urlEnv: DATABASE_URL
+    #   appId: full-config
+    kv:
+      # provider: firestore # Optional; the Google Functions default.
+      collection: full-config-kv
+    storage:
+      # provider: gcs # Optional; the Google Functions default.
+      bucket: full-config-storage
+
+deploy:
+  google-functions:
+    name: full-config
+    region: asia-northeast1
+    runtime: nodejs24
+    allowUnauthenticated: false
+
+  lambda:
+    region: ap-northeast-1
+    runtime: nodejs24.x
+    timeout: 30
+    http:
+      auth: aws-iam
+
+  netlify:
+    # Site ID is non-secret. Keep NETLIFY_AUTH_TOKEN outside this file.
+    site: your-netlify-site-id
+    prod: false

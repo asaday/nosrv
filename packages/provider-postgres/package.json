@@ -1,0 +1,44 @@
+{
+  "name": "@nosrv/provider-postgres",
+  "version": "0.1.0",
+  "description": "PostgreSQL database provider for nosrv",
+  "license": "Apache-2.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/asaday/nosrv.git",
+    "directory": "packages/provider-postgres"
+  },
+  "homepage": "https://github.com/asaday/nosrv#readme",
+  "bugs": {
+    "url": "https://github.com/asaday/nosrv/issues"
+  },
+  "keywords": [
+    "nosrv",
+    "postgresql",
+    "postgres",
+    "database"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@nosrv/core": "0.1.0",
+    "@nosrv/provider-sql": "0.1.0",
+    "pg": "^8.16.0"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.15.0"
+  }
+}

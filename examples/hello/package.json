@@ -1,0 +1,18 @@
+{
+  "name": "nosrv-example-hello",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nosrv dev",
+    "dev:cloudflare": "nosrv dev --target cloudflare",
+    "dev:google": "nosrv dev --target google-functions",
+    "dev:lambda": "nosrv dev --target lambda",
+    "deploy": "nosrv deploy"
+  },
+  "dependencies": {
+    "@nosrv/adapter-cloudflare": "0.1.0",
+    "@nosrv/adapter-google-functions": "0.1.0",
+    "@nosrv/adapter-lambda": "0.1.0",
+    "@nosrv/core": "0.1.0"
+  }
+}

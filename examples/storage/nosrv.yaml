@@ -1,0 +1,17 @@
+providers:
+  node:
+    storage:
+      provider: filesystem
+      directory: ./.nosrv/storage
+
+  cloudflare:
+    storage:
+      bucket: nosrv-storage-example
+
+  google-functions:
+    storage:
+      bucket: nosrv-storage-example
+
+  lambda:
+    storage:
+      bucket: nosrv-storage-example

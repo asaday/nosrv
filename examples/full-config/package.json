@@ -1,0 +1,13 @@
+{
+  "name": "@nosrv/example-full-config",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nosrv dev",
+    "dev:cloudflare": "nosrv dev --target cloudflare",
+    "deploy": "nosrv deploy"
+  },
+  "dependencies": {
+    "@nosrv/core": "0.1.0"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "scheduled",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nosrv dev",
+    "deploy": "nosrv deploy"
+  },
+  "dependencies": {
+    "@nosrv/core": "0.1.0"
+  }
+}

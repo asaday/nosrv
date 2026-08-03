@@ -89,20 +89,20 @@ Open <http://127.0.0.1:8787> or run:
 curl http://127.0.0.1:8787/hello
 ```
 
-After the repository is published to GitHub, a project can be created without publishing nosrv to npm:
+Create a project with the published CLI:
 
 ```bash
-npx github:asaday/nosrv create my-app
+npx nosrv create my-app
 cd my-app
 npm install
-npx github:asaday/nosrv dev
-npx github:asaday/nosrv deploy --target cloudflare
+npx nosrv dev
+npx nosrv deploy --target cloudflare
 ```
 
-Pin a tag for repeatable use:
+Pin a version for repeatable use:
 
 ```bash
-npx github:asaday/nosrv#v0.1.0 create my-app
+npx nosrv@0.1.1 create my-app
 ```
 
 The generated project contains an `AGENTS.md` with the essential portability rules.

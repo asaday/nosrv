@@ -1,6 +1,6 @@
 {
   "name": "@nosrv/adapter-google-functions",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Google Cloud Functions adapter for nosrv applications",
   "license": "Apache-2.0",
   "type": "module",
@@ -35,9 +35,9 @@
   },
   "dependencies": {
     "@google-cloud/functions-framework": "^5.0.5",
-    "@nosrv/core": "0.1.0",
-    "@nosrv/provider-firestore": "0.1.0",
-    "@nosrv/provider-gcs": "0.1.0",
-    "@nosrv/provider-static-files": "0.1.0"
+    "@nosrv/core": "0.1.1",
+    "@nosrv/provider-firestore": "0.1.1",
+    "@nosrv/provider-gcs": "0.1.1",
+    "@nosrv/provider-static-files": "0.1.1"
   }
 }

@@ -1,6 +1,6 @@
 {
   "name": "@nosrv/provider-postgres",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "PostgreSQL database provider for nosrv",
   "license": "Apache-2.0",
   "type": "module",
@@ -34,8 +34,8 @@
     "access": "public"
   },
   "dependencies": {
-    "@nosrv/core": "0.1.0",
-    "@nosrv/provider-sql": "0.1.0",
+    "@nosrv/core": "0.1.1",
+    "@nosrv/provider-sql": "0.1.1",
     "pg": "^8.16.0"
   },
   "devDependencies": {

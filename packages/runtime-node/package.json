@@ -1,6 +1,6 @@
 {
   "name": "@nosrv/runtime-node",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Node.js runtime for nosrv applications",
   "license": "Apache-2.0",
   "type": "module",
@@ -34,9 +34,9 @@
     "access": "public"
   },
   "dependencies": {
-    "@nosrv/core": "0.1.0",
-    "@nosrv/provider-filesystem": "0.1.0",
-    "@nosrv/provider-sqlite": "0.1.0",
-    "@nosrv/provider-static-files": "0.1.0"
+    "@nosrv/core": "0.1.1",
+    "@nosrv/provider-filesystem": "0.1.1",
+    "@nosrv/provider-sqlite": "0.1.1",
+    "@nosrv/provider-static-files": "0.1.1"
   }
 }

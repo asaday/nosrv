@@ -1,6 +1,6 @@
 {
   "name": "@nosrv/adapter-lambda",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "AWS Lambda adapter for nosrv applications",
   "license": "Apache-2.0",
   "type": "module",
@@ -34,10 +34,10 @@
     "access": "public"
   },
   "dependencies": {
-    "@nosrv/core": "0.1.0",
-    "@nosrv/provider-dynamodb": "0.1.0",
-    "@nosrv/provider-s3": "0.1.0",
-    "@nosrv/provider-static-files": "0.1.0"
+    "@nosrv/core": "0.1.1",
+    "@nosrv/provider-dynamodb": "0.1.1",
+    "@nosrv/provider-s3": "0.1.1",
+    "@nosrv/provider-static-files": "0.1.1"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.0"

@@ -1,6 +1,6 @@
 {
   "name": "@nosrv/provider-static-files",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Static file and SPA serving utilities for nosrv",
   "license": "Apache-2.0",
   "type": "module",

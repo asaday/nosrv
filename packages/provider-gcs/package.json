@@ -1,6 +1,6 @@
 {
   "name": "@nosrv/provider-gcs",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Google Cloud Storage object storage provider for nosrv",
   "license": "Apache-2.0",
   "type": "module",
@@ -35,6 +35,6 @@
   },
   "dependencies": {
     "@google-cloud/storage": "^7.18.0",
-    "@nosrv/core": "0.1.0"
+    "@nosrv/core": "0.1.1"
   }
 }

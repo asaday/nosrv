@@ -1,6 +1,6 @@
 {
   "name": "@nosrv/provider-cloudflare-kv",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Cloudflare Workers KV provider for nosrv",
   "license": "Apache-2.0",
   "type": "module",
@@ -34,6 +34,6 @@
     "access": "public"
   },
   "dependencies": {
-    "@nosrv/core": "0.1.0"
+    "@nosrv/core": "0.1.1"
   }
 }

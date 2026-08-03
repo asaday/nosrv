@@ -1,6 +1,6 @@
 {
   "name": "@nosrv/provider-firestore",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Google Cloud Firestore key-value provider for nosrv",
   "license": "Apache-2.0",
   "type": "module",
@@ -35,6 +35,6 @@
   },
   "dependencies": {
     "@google-cloud/firestore": "^8.6.0",
-    "@nosrv/core": "0.1.0"
+    "@nosrv/core": "0.1.1"
   }
 }

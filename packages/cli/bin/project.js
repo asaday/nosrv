@@ -62,7 +62,7 @@ function validateConfigKeys(config) {
   if (config.providers !== undefined) {
     const providers = assertAllowedKeys(
       config.providers,
-      ["node", "cloudflare", "lambda", "google-functions"],
+      ["node", "cloudflare", "lambda", "google-functions", "azure"],
       "providers",
     );
     if (providers.node !== undefined)
@@ -89,11 +89,17 @@ function validateConfigKeys(config) {
         kv: ["provider", "collection"],
         storage: ["provider", "bucket"],
       });
+    if (providers.azure !== undefined)
+      validateProviderGroup(providers.azure, "providers.azure", {
+        db: ["provider", "urlEnv", "appId"],
+        kv: ["provider", "database", "container", "connectionStringEnv"],
+        storage: ["provider", "container", "connectionStringEnv"],
+      });
   }
   if (config.deploy !== undefined) {
     const deploy = assertAllowedKeys(
       config.deploy,
-      ["google-functions", "lambda", "netlify"],
+      ["google-functions", "lambda", "azure"],
       "deploy",
     );
     if (deploy["google-functions"] !== undefined)
@@ -110,8 +116,8 @@ function validateConfigKeys(config) {
       );
       if (lambda.http !== undefined) assertAllowedKeys(lambda.http, ["auth"], "deploy.lambda.http");
     }
-    if (deploy.netlify !== undefined)
-      assertAllowedKeys(deploy.netlify, ["prod", "site", "alias"], "deploy.netlify");
+    if (deploy.azure !== undefined)
+      assertAllowedKeys(deploy.azure, ["app", "slot", "authLevel"], "deploy.azure");
   }
 }
 

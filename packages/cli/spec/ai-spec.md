@@ -298,7 +298,7 @@ Normally deploy directly; the deploy command performs its target-specific build 
 ```bash
 NOSRV_PLATFORM_URL="..." NOSRV_TOKEN="issued-personal-token" nosrv deploy
 nosrv deploy --target cloudflare
-nosrv deploy --target netlify --dry-run
+nosrv deploy --target azure --dry-run
 ```
 
 Use `nosrv build` and `nosrv run .nosrv/build` only when an Artifact must be inspected, verified, or tested explicitly. Do not edit generated Artifact files.

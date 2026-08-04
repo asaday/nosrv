@@ -3,7 +3,6 @@ import { execFile } from "node:child_process";
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
-import { pathToFileURL } from "node:url";
 import test from "node:test";
 import { promisify } from "node:util";
 
@@ -155,7 +154,7 @@ test("rejects an explicitly unsupported cloud provider", async () => {
   }
 });
 
-test("generates a Netlify Functions staging project with static assets", async () => {
+test("generates an Azure Functions staging project with assets and timers", async () => {
   const directory = await fixture();
   try {
     await mkdir(resolve(directory, "public"));
@@ -164,42 +163,42 @@ test("generates a Netlify Functions staging project with static assets", async (
       "<!doctype html><title>nosrv</title>\n",
       "utf8",
     );
-    await exec(process.execPath, [cli, "deploy", "--target", "netlify", "--dry-run"], {
+    await writeFile(
+      resolve(directory, "nosrv.yaml"),
+      "app: ./src/app.ts\nschedules:\n  - name: cleanup\n    cron: '*/5 * * * *'\n",
+      "utf8",
+    );
+    await exec(process.execPath, [cli, "deploy", "--target", "azure", "--dry-run"], {
       cwd: directory,
     });
-    const output = resolve(directory, ".nosrv/netlify/deploy");
-    const functionPath = resolve(output, "functions/nosrv.mjs");
-    assert.match(await readFile(functionPath, "utf8"), /createNetlifyHandler/);
-    const generated = await import(`${pathToFileURL(functionPath).href}?test=${Date.now()}`);
-    const response = await generated.default(
-      new Request("https://example.netlify.app/api/check"),
-      {},
-    );
-    assert.deepEqual(await response.json(), { ok: true, resource: "private-resource" });
+    const output = resolve(directory, ".nosrv/azure/deploy");
+    const entry = await readFile(resolve(output, "index.mjs"), "utf8");
+    assert.match(entry, /createAzureHttpHandler/);
+    assert.match(entry, /createAzureTimerHandler/);
+    assert.match(entry, /0 \*\/5 \* \* \* \*/);
     assert.match(await readFile(resolve(output, "public/index.html"), "utf8"), /nosrv/);
-    const config = await readFile(resolve(output, "netlify.toml"), "utf8");
-    assert.match(config, /functions = "functions"/);
-    assert.match(config, /\.netlify\/functions\/nosrv/);
+    assert.match(await readFile(resolve(output, "host.json"), "utf8"), /routePrefix/);
+    const pkg = JSON.parse(await readFile(resolve(output, "package.json"), "utf8"));
+    assert.equal(pkg.dependencies["@azure/functions"], "^4.7.0");
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
 });
 
-test("generates a handler-free Netlify static deployment", async () => {
-  const directory = await mkdtemp(resolve(tmpdir(), "nosrv-netlify-static-"));
+test("generates a handler-free Azure static deployment", async () => {
+  const directory = await mkdtemp(resolve(tmpdir(), "nosrv-azure-static-"));
   try {
     await writeFile(
       resolve(directory, "index.html"),
       "<!doctype html><title>static</title>\n",
       "utf8",
     );
-    await exec(process.execPath, [cli, "deploy", "--target", "netlify", "--dry-run"], {
+    await exec(process.execPath, [cli, "deploy", "--target", "azure", "--dry-run"], {
       cwd: directory,
     });
-    const output = resolve(directory, ".nosrv/netlify/deploy");
+    const output = resolve(directory, ".nosrv/azure/deploy");
     assert.match(await readFile(resolve(output, "public/index.html"), "utf8"), /static/);
-    const config = await readFile(resolve(output, "netlify.toml"), "utf8");
-    assert.doesNotMatch(config, /\[\[redirects\]\]/);
+    assert.match(await readFile(resolve(output, "index.mjs"), "utf8"), /Not found/);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
@@ -214,7 +213,7 @@ test("rejects Apps with host permissions for public-cloud deployment targets", a
       "utf8",
     );
     await assert.rejects(
-      exec(process.execPath, [cli, "deploy", "--target", "netlify", "--dry-run"], {
+      exec(process.execPath, [cli, "deploy", "--target", "azure", "--dry-run"], {
         cwd: directory,
       }),
       /Apps with host permissions can only deploy to nosrv Platform/,

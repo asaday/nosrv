@@ -395,7 +395,8 @@ export interface Database {
 }
 
 export interface PlatformInfo {
-  readonly name: "node" | "cloudflare" | "lambda" | "google-functions" | (string & {});
+  readonly name:
+    "node" | "cloudflare" | "lambda" | "google-functions" | "azure-functions" | (string & {});
 }
 
 export interface User {

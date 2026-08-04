@@ -21,11 +21,13 @@ export async function registerTypeScript(cwd, appPath) {
   const tsconfigPath = resolve(outputDirectory, "tsconfig.npx.json");
   const packagePaths = {
     "@nosrv/adapter-cloudflare": ["packages/adapter-cloudflare/src/index.ts"],
+    "@nosrv/adapter-azure-functions": ["packages/adapter-azure-functions/src/index.ts"],
     "@nosrv/adapter-google-functions": ["packages/adapter-google-functions/src/index.ts"],
     "@nosrv/adapter-lambda": ["packages/adapter-lambda/src/index.ts"],
-    "@nosrv/adapter-netlify": ["packages/adapter-netlify/src/index.ts"],
     "@nosrv/core": ["packages/core/src/index.ts"],
     "@nosrv/provider-cloudflare-kv": ["packages/provider-cloudflare-kv/src/index.ts"],
+    "@nosrv/provider-azure-blob": ["packages/provider-azure-blob/src/index.ts"],
+    "@nosrv/provider-cosmos": ["packages/provider-cosmos/src/index.ts"],
     "@nosrv/provider-d1": ["packages/provider-d1/src/index.ts"],
     "@nosrv/provider-dynamodb": ["packages/provider-dynamodb/src/index.ts"],
     "@nosrv/provider-filesystem": ["packages/provider-filesystem/src/index.ts"],

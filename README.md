@@ -55,7 +55,7 @@ Do not use it when:
 
 ## Current support
 
-| Feature              | Local Node.js        | Self-hosted Platform                | Cloudflare Workers    | AWS Lambda                     | Google Functions    | Netlify Functions               |
+| Feature              | Local Node.js        | Self-hosted Platform                | Cloudflare Workers    | AWS Lambda                     | Google Functions    | Azure Functions                 |
 | -------------------- | -------------------- | ----------------------------------- | --------------------- | ------------------------------ | ------------------- | ------------------------------- |
 | HTTP runtime         | ✅                   | ✅                                  | ✅                    | ✅                             | ✅                  | ✅                              |
 | Static files / SPA   | Filesystem           | Packaged assets                     | Workers Static Assets | Packaged assets                | Packaged assets     | Static assets / no SPA fallback |
@@ -64,10 +64,10 @@ Do not use it when:
 | Object storage       | Filesystem           | Filesystem per app                  | R2                    | S3                             | GCS                 | —                               |
 | Secrets              | Environment / `.env` | Environment injection only          | Wrangler bindings     | Environment                    | Environment         | Site environment                |
 | Verified user hook   | Resolver             | Local/OIDC session                  | Resolver              | API Gateway claims or resolver | Resolver            | Adapter resolver                |
-| CLI development      | ✅                   | Docker or local Node                | ✅                    | HTTP API v2 emulator           | Functions Framework | Use Netlify CLI directly        |
-| Automated deployment | —                    | ✅ authenticated upload             | ✅ Wrangler           | ✅ AWS SAM                     | ✅ gcloud           | ✅ Netlify CLI                  |
+| CLI development      | ✅                   | Docker or local Node                | ✅                    | HTTP API v2 emulator           | Functions Framework | Functions Core Tools            |
+| Automated deployment | —                    | ✅ authenticated upload             | ✅ Wrangler           | ✅ AWS SAM                     | ✅ gcloud           | ✅ Functions Core Tools         |
 
-The application model is the center of nosrv. Local Node.js, public-cloud adapters, and the self-hosted Platform are execution environments for that model. Public-cloud deployment generates target configuration and delegates authentication, upload, and infrastructure state to Wrangler, `gcloud`, AWS SAM, or Netlify CLI.
+The application model is the center of nosrv. Local Node.js, public-cloud adapters, and the self-hosted Platform are execution environments for that model. Public-cloud deployment generates target configuration and delegates authentication, upload, and infrastructure state to Wrangler, `gcloud`, AWS SAM, or Azure Functions Core Tools.
 
 See [`docs/deployment.md`](docs/deployment.md) for the implemented deployment flows and delegation boundaries.
 
@@ -322,12 +322,12 @@ This is a migration path, not a promise of zero-change portability. SQL dialects
 
 nosrv generates target files, then delegates authentication and cloud changes to each provider's official CLI. Authenticate before running a publishing deployment:
 
-| Target             | Required CLI                    | Interactive setup                                                   | Non-interactive / CI                                                            |
-| ------------------ | ------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| Cloudflare Workers | Wrangler, included with nosrv   | `npx wrangler login`                                                | Set `CLOUDFLARE_API_TOKEN`                                                      |
-| Google Functions   | Google Cloud CLI (`gcloud`)     | `gcloud auth login` and `gcloud config set project PROJECT_ID`      | Use an authenticated service account or workload identity supported by `gcloud` |
-| AWS Lambda         | AWS CLI and AWS SAM CLI (`sam`) | `aws configure`, or `aws configure sso` followed by `aws sso login` | Supply an AWS credential/profile supported by the AWS CLI credential chain      |
-| Netlify Functions  | Netlify CLI                     | `netlify login`                                                     | Set `NETLIFY_AUTH_TOKEN` and select a site with `--site` or configuration       |
+| Target             | Required CLI                     | Interactive setup                                                   | Non-interactive / CI                                                            |
+| ------------------ | -------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Cloudflare Workers | Wrangler, included with nosrv    | `npx wrangler login`                                                | Set `CLOUDFLARE_API_TOKEN`                                                      |
+| Google Functions   | Google Cloud CLI (`gcloud`)      | `gcloud auth login` and `gcloud config set project PROJECT_ID`      | Use an authenticated service account or workload identity supported by `gcloud` |
+| AWS Lambda         | AWS CLI and AWS SAM CLI (`sam`)  | `aws configure`, or `aws configure sso` followed by `aws sso login` | Supply an AWS credential/profile supported by the AWS CLI credential chain      |
+| Azure Functions    | Azure CLI + Functions Core Tools | `az login`; `az account set --subscription ...`; `func --version`   | Use managed identity or Function App settings; publish to an existing App       |
 
 Check the active identity before deploying:
 
@@ -337,7 +337,8 @@ gcloud auth list
 gcloud config get-value project
 aws sts get-caller-identity
 sam --version
-netlify status
+az account show
+func --version
 ```
 
 `gcloud auth login` authenticates the `gcloud functions deploy` command. When local nosrv code itself accesses GCS or Firestore with Google client libraries, also configure Application Default Credentials separately:
@@ -352,7 +353,7 @@ Do not commit API tokens, access keys, service-account keys, or generated creden
 
 Authentication is usually enough for an HTTP-only App such as `examples/hello`. Declared cloud-backed resource capabilities need the corresponding resource and runtime permissions. Runtime-provided secrets must be configured separately on the deployment target:
 
-| Resource/configuration | Cloudflare              | Google Functions                               | AWS Lambda                                        | Netlify Functions              |
+| Resource/configuration | Cloudflare              | Google Functions                               | AWS Lambda                                        | Azure Functions                |
 | ---------------------- | ----------------------- | ---------------------------------------------- | ------------------------------------------------- | ------------------------------ |
 | KV                     | Workers KV namespace    | Firestore database and collection access       | DynamoDB table                                    | Not yet supported              |
 | Object storage         | R2 bucket               | GCS bucket                                     | S3 bucket                                         | Not yet supported              |
@@ -512,24 +513,23 @@ nosrv deploy --target google-functions --region asia-northeast1
 
 Google and Lambda scheduled adapters are implemented, but their Cloud Scheduler and EventBridge resources are not generated by the deployment CLI yet.
 
-### Netlify Functions
+### Azure Functions
 
-Generate a Netlify deployment directory containing the bundled Function, static assets, and `netlify.toml` without publishing:
-
-```bash
-nosrv deploy --target netlify --dry-run
-```
-
-Install the official Netlify CLI, authenticate, and deploy a preview or production version:
+Generate an Azure Functions Node.js v4 staging project containing the bundled HTTP Function, static assets, private resources, and Timer registrations without publishing:
 
 ```bash
-npm install --global netlify-cli
-netlify login
-nosrv deploy --target netlify
-nosrv deploy --target netlify --prod
+nosrv deploy --target azure --dry-run
 ```
 
-Use `--site SITE_ID` for an already linked site. Runtime environment variables and secrets come from the Netlify site's environment configuration and need no declaration in App code. nosrv does not write their values into generated files. HTTP handlers, ordinary static assets, and handler-free static sites are supported. Netlify Scheduled Functions and nosrv capability providers are not generated yet.
+Install Azure Functions Core Tools v4, authenticate with Azure CLI, and publish to an existing Function App:
+
+```bash
+az login
+az account set --subscription SUBSCRIPTION
+nosrv deploy --target azure --app FUNCTION_APP_NAME
+```
+
+The Function App and its hosting plan/storage must already exist. Runtime values and secrets come from Function App settings or Key Vault references and are never written to generated source. Azure Blob Storage, Cosmos DB KV, PostgreSQL, static assets, handler-free static sites, and named five-field UTC schedules are supported. nosrv converts each schedule to an Azure six-field NCRONTAB Timer trigger.
 
 ## Examples
 

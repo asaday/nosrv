@@ -89,6 +89,21 @@ providers:
       # provider: gcs # Optional; the Google Functions default.
       bucket: full-config-storage
 
+  azure:
+    # db:
+    #   provider: postgres # Optional; the Azure Functions default.
+    #   urlEnv: DATABASE_URL
+    #   appId: full-config
+    kv:
+      # provider: cosmos # Optional; the Azure Functions default.
+      database: full-config
+      container: kv
+      # connectionStringEnv: AZURE_COSMOS_CONNECTION_STRING
+    storage:
+      # provider: azure-blob # Optional; the Azure Functions default.
+      container: full-config-storage
+      # connectionStringEnv: AZURE_STORAGE_CONNECTION_STRING
+
 deploy:
   google-functions:
     name: full-config
@@ -103,7 +118,7 @@ deploy:
     http:
       auth: aws-iam
 
-  netlify:
-    # Site ID is non-secret. Keep NETLIFY_AUTH_TOKEN outside this file.
-    site: your-netlify-site-id
-    prod: false
+  azure:
+    # Existing Function App. Authentication and provisioning stay with Azure tooling.
+    app: your-function-app
+    authLevel: function

@@ -19,7 +19,7 @@ import { dev } from "./dev-node.js";
 import { runWranglerDeploy } from "./targets/cloudflare.js";
 import { runGoogleDeploy } from "./targets/google-functions.js";
 import { runLambdaDeploy } from "./targets/lambda.js";
-import { runNetlifyDeploy } from "./targets/netlify.js";
+import { runAzureDeploy } from "./targets/azure.js";
 
 const usage = `nosrv v${packageManifest.version}
 
@@ -29,7 +29,7 @@ Usage:
   nosrv build [--output <directory>]
   nosrv run <artifact-directory> [--port <number>] [--host <hostname>]
   nosrv dev [--target <node|cloudflare|google-functions|lambda>] [--port <number>] [--host <hostname>]
-  nosrv deploy [--target <platform|cloudflare|google-functions|lambda|netlify>] [target options]
+  nosrv deploy [--target <platform|cloudflare|google-functions|lambda|azure>] [target options]
   nosrv login [--url <platform-url>] [--header <name:value>...]
   nosrv whoami
   nosrv logout
@@ -158,7 +158,7 @@ function deploymentTargetLabel(target) {
     cloudflare: "Cloudflare Workers",
     "google-functions": "Google Cloud Functions",
     lambda: "AWS Lambda",
-    netlify: "Netlify Functions",
+    azure: "Azure Functions",
   };
   return labels[target] ?? target;
 }
@@ -189,13 +189,13 @@ async function deploy(args) {
     await runLambdaDeploy(cwd, appPath, config, args);
     return;
   }
-  if (target === "netlify") {
-    await runNetlifyDeploy(cwd, appPath, config, args);
+  if (target === "azure") {
+    await runAzureDeploy(cwd, appPath, config, args);
     return;
   }
   if (target !== "cloudflare") {
     throw new Error(
-      `Unsupported deployment target: ${target}. Currently supported: cloudflare, platform, google-functions, lambda, netlify`,
+      `Unsupported deployment target: ${target}. Currently supported: cloudflare, platform, google-functions, lambda, azure`,
     );
   }
   await runWranglerDeploy(cwd, appPath, config, args);

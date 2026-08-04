@@ -3,6 +3,11 @@
     "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
+    "paths": {
+      "@nosrv/adapter-azure-functions": ["./packages/adapter-azure-functions/src/index.ts"],
+      "@nosrv/provider-azure-blob": ["./packages/provider-azure-blob/src/index.ts"],
+      "@nosrv/provider-cosmos": ["./packages/provider-cosmos/src/index.ts"]
+    },
     "allowImportingTsExtensions": true,
     "strict": true,
     "noEmit": true,

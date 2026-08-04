@@ -1,7 +1,7 @@
 {
-  "name": "@nosrv/adapter-netlify",
+  "name": "@nosrv/provider-cosmos",
   "version": "0.1.1",
-  "description": "Netlify Functions adapter for nosrv applications",
+  "description": "Azure Cosmos DB key-value provider for nosrv",
   "license": "Apache-2.0",
   "type": "module",
   "exports": {
@@ -18,7 +18,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/asaday/nosrv.git",
-    "directory": "packages/adapter-netlify"
+    "directory": "packages/provider-cosmos"
   },
   "homepage": "https://github.com/asaday/nosrv#readme",
   "bugs": {
@@ -26,14 +26,15 @@
   },
   "keywords": [
     "nosrv",
-    "netlify",
-    "functions",
-    "serverless"
+    "azure",
+    "cosmos-db",
+    "kv"
   ],
   "publishConfig": {
     "access": "public"
   },
   "dependencies": {
+    "@azure/cosmos": "^4.5.1",
     "@nosrv/core": "0.1.1"
   }
 }

@@ -10,7 +10,7 @@
     "deploy": "nosrv deploy"
   },
   "dependencies": {
-    "@nosrv/core": "0.1.0",
-    "@nosrv/router": "0.1.0"
+    "@nosrv/core": "^0.1.1",
+    "@nosrv/router": "^0.1.1"
   }
 }

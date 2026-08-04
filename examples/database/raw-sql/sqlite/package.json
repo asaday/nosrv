@@ -6,6 +6,6 @@
     "dev": "nosrv dev"
   },
   "dependencies": {
-    "@nosrv/core": "0.1.0"
+    "@nosrv/core": "^0.1.1"
   }
 }

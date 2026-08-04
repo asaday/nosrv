@@ -5,7 +5,7 @@ app: ./app.ts
 route: /full-config
 
 meta:
-  description: Runnable reference for every nosrv.yaml option.
+  description: Runnable reference for representative nosrv.yaml options.
   icon: 🧩
 
 spa: false
@@ -25,6 +25,7 @@ dev:
 #   filesystem:
 #     read: [/srv/reports]
 #     write: []
+#   childProcess: true
 # Use permissions: "*" only for fully trusted administration Apps.
 
 # Ask the deployment target to authenticate requests before they reach the App.
@@ -34,6 +35,9 @@ dev:
 schedules:
   - name: daily-cleanup
     cron: "0 3 * * *"
+# Cloudflare and Azure deployment generate scheduler triggers. Remove schedules before
+# deploying this example to Google Functions or Lambda; their deploy commands do not yet
+# provision Cloud Scheduler or EventBridge resources.
 
 providers:
   node:
@@ -121,4 +125,5 @@ deploy:
   azure:
     # Existing Function App. Authentication and provisioning stay with Azure tooling.
     app: your-function-app
+    # slot: staging
     authLevel: function

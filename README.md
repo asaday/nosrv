@@ -55,17 +55,17 @@ Do not use it when:
 
 ## Current support
 
-| Feature              | Local Node.js        | Self-hosted Platform                | Cloudflare Workers    | AWS Lambda                     | Google Functions    | Azure Functions                 |
-| -------------------- | -------------------- | ----------------------------------- | --------------------- | ------------------------------ | ------------------- | ------------------------------- |
-| HTTP runtime         | ✅                   | ✅                                  | ✅                    | ✅                             | ✅                  | ✅                              |
-| Static files / SPA   | Filesystem           | Packaged assets                     | Workers Static Assets | Packaged assets                | Packaged assets     | Static assets / no SPA fallback |
-| Database             | SQLite or PostgreSQL | SQLite per app or shared PostgreSQL | D1                    | PostgreSQL                     | PostgreSQL          | —                               |
-| KV                   | SQLite               | SQLite per app or shared Redis      | Workers KV            | DynamoDB                       | Firestore           | —                               |
-| Object storage       | Filesystem           | Filesystem per app                  | R2                    | S3                             | GCS                 | —                               |
-| Secrets              | Environment / `.env` | Environment injection only          | Wrangler bindings     | Environment                    | Environment         | Site environment                |
-| Verified user hook   | Resolver             | Local/OIDC session                  | Resolver              | API Gateway claims or resolver | Resolver            | Adapter resolver                |
-| CLI development      | ✅                   | Docker or local Node                | ✅                    | HTTP API v2 emulator           | Functions Framework | Functions Core Tools            |
-| Automated deployment | —                    | ✅ authenticated upload             | ✅ Wrangler           | ✅ AWS SAM                     | ✅ gcloud           | ✅ Functions Core Tools         |
+| Feature              | Local Node.js        | Self-hosted Platform                | Cloudflare Workers    | AWS Lambda                     | Google Functions    | Azure Functions          |
+| -------------------- | -------------------- | ----------------------------------- | --------------------- | ------------------------------ | ------------------- | ------------------------ |
+| HTTP runtime         | ✅                   | ✅                                  | ✅                    | ✅                             | ✅                  | ✅                       |
+| Static files / SPA   | Filesystem           | Packaged assets                     | Workers Static Assets | Packaged assets                | Packaged assets     | Packaged assets          |
+| Database             | SQLite or PostgreSQL | SQLite per app or shared PostgreSQL | D1                    | PostgreSQL                     | PostgreSQL          | PostgreSQL               |
+| KV                   | SQLite               | SQLite per app or shared Redis      | Workers KV            | DynamoDB                       | Firestore           | Cosmos DB                |
+| Object storage       | Filesystem           | Filesystem per app or shared S3/GCS | R2                    | S3                             | GCS                 | Blob Storage             |
+| Secrets              | Environment / `.env` | Encrypted per-App or shared secrets | Wrangler bindings     | Environment                    | Environment         | App settings / Key Vault |
+| Verified user hook   | Resolver             | Local/OIDC session                  | Resolver              | API Gateway claims or resolver | Resolver            | Adapter resolver         |
+| CLI development      | ✅                   | Docker or local Node                | ✅                    | HTTP API v2 emulator           | Functions Framework | —                        |
+| Automated deployment | —                    | ✅ authenticated upload             | ✅ Wrangler           | ✅ AWS SAM                     | ✅ gcloud           | ✅ Functions Core Tools  |
 
 The application model is the center of nosrv. Local Node.js, public-cloud adapters, and the self-hosted Platform are execution environments for that model. Public-cloud deployment generates target configuration and delegates authentication, upload, and infrastructure state to Wrangler, `gcloud`, AWS SAM, or Azure Functions Core Tools.
 
@@ -138,7 +138,7 @@ CLI options override configuration:
 npx nosrv dev --host 0.0.0.0 --port 3000
 ```
 
-See [`examples/full-config/nosrv.yaml`](examples/full-config/nosrv.yaml) for an intentionally verbose, runnable reference containing the supported application, provider, schedule, and deployment settings. Normal Apps should keep only values that differ from the defaults.
+See [`examples/full-config/nosrv.yaml`](examples/full-config/nosrv.yaml) for an intentionally verbose, runnable reference containing representative application, provider, schedule, and deployment settings. Normal Apps should keep only values that differ from the defaults.
 
 No configuration is required for either `app.ts` or `src/app.ts`. Keep a small App at the root, and move it under `src/` as its source tree grows. A sibling `public/` directory is discovered automatically in both layouts:
 
@@ -322,12 +322,12 @@ This is a migration path, not a promise of zero-change portability. SQL dialects
 
 nosrv generates target files, then delegates authentication and cloud changes to each provider's official CLI. Authenticate before running a publishing deployment:
 
-| Target             | Required CLI                     | Interactive setup                                                   | Non-interactive / CI                                                            |
-| ------------------ | -------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| Cloudflare Workers | Wrangler, included with nosrv    | `npx wrangler login`                                                | Set `CLOUDFLARE_API_TOKEN`                                                      |
-| Google Functions   | Google Cloud CLI (`gcloud`)      | `gcloud auth login` and `gcloud config set project PROJECT_ID`      | Use an authenticated service account or workload identity supported by `gcloud` |
-| AWS Lambda         | AWS CLI and AWS SAM CLI (`sam`)  | `aws configure`, or `aws configure sso` followed by `aws sso login` | Supply an AWS credential/profile supported by the AWS CLI credential chain      |
-| Azure Functions    | Azure CLI + Functions Core Tools | `az login`; `az account set --subscription ...`; `func --version`   | Use managed identity or Function App settings; publish to an existing App       |
+| Target             | Required CLI                     | Interactive setup                                                   | Non-interactive / CI                                                                                                |
+| ------------------ | -------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Cloudflare Workers | Wrangler, included with nosrv    | `npx wrangler login`                                                | Set `CLOUDFLARE_API_TOKEN`                                                                                          |
+| Google Functions   | Google Cloud CLI (`gcloud`)      | `gcloud auth login` and `gcloud config set project PROJECT_ID`      | Use an authenticated service account or workload identity supported by `gcloud`                                     |
+| AWS Lambda         | AWS CLI and AWS SAM CLI (`sam`)  | `aws configure`, or `aws configure sso` followed by `aws sso login` | Supply an AWS credential/profile supported by the AWS CLI credential chain                                          |
+| Azure Functions    | Azure CLI + Functions Core Tools | `az login`; `az account set --subscription ...`; `func --version`   | Authenticate Azure CLI with a service principal, workload identity, or managed identity; publish to an existing App |
 
 Check the active identity before deploying:
 
@@ -353,12 +353,12 @@ Do not commit API tokens, access keys, service-account keys, or generated creden
 
 Authentication is usually enough for an HTTP-only App such as `examples/hello`. Declared cloud-backed resource capabilities need the corresponding resource and runtime permissions. Runtime-provided secrets must be configured separately on the deployment target:
 
-| Resource/configuration | Cloudflare              | Google Functions                               | AWS Lambda                                        | Azure Functions                |
-| ---------------------- | ----------------------- | ---------------------------------------------- | ------------------------------------------------- | ------------------------------ |
-| KV                     | Workers KV namespace    | Firestore database and collection access       | DynamoDB table                                    | Not yet supported              |
-| Object storage         | R2 bucket               | GCS bucket                                     | S3 bucket                                         | Not yet supported              |
-| Database               | D1 database             | PostgreSQL                                     | PostgreSQL                                        | Not yet supported              |
-| Secrets                | Wrangler secret/binding | Function environment or Secret Manager mapping | Lambda environment or Secrets Manager integration | Site environment configuration |
+| Resource/configuration | Cloudflare              | Google Functions                               | AWS Lambda                                        | Azure Functions                                    |
+| ---------------------- | ----------------------- | ---------------------------------------------- | ------------------------------------------------- | -------------------------------------------------- |
+| KV                     | Workers KV namespace    | Firestore database and collection access       | DynamoDB table                                    | Cosmos DB database and `/id`-partitioned container |
+| Object storage         | R2 bucket               | GCS bucket                                     | S3 bucket                                         | Blob Storage container                             |
+| Database               | D1 database             | PostgreSQL                                     | PostgreSQL                                        | PostgreSQL                                         |
+| Secrets                | Wrangler secret/binding | Function environment or Secret Manager mapping | Lambda environment or Secrets Manager integration | Function App settings or Key Vault references      |
 
 nosrv currently generates bindings and adapter configuration, but it does not generally create these cloud data resources, migrate schemas, or grant runtime IAM permissions. Local Node.js and the one-node Platform development profile provision SQLite database and KV files plus filesystem object storage. A replicated Platform requires operator-provided PostgreSQL, Redis, and S3 or GCS. For public clouds, create or select the resource first, put only its non-secret identifier in `nosrv.yaml`, and grant the deployed Worker or function the minimum required access. Resource names, IDs, regions, retention, backups, billing, and deletion remain provider-owned operational choices.
 
@@ -390,7 +390,7 @@ schedules:
     cron: "0 3 * * *"
 ```
 
-Schedules use unique five-field cron expressions in UTC. Local Node.js and nosrv Platform execute them in the App process; Cloudflare deployment generates Cron Triggers and invokes the same handler. A trigger may be duplicated by a provider or missed while a Node.js App is stopped, so scheduled work must be idempotent and must not rely on this MVP as a durable job queue. Overlapping runs of the same schedule are suppressed within one Node.js App process. Scheduled handlers are intended for short background work, not long-running job processing, and receive `ctx.user` as `null` because there is no request identity.
+Schedules use unique five-field cron expressions in UTC. Local Node.js and nosrv Platform execute them in the App process, Cloudflare deployment generates Cron Triggers, and Azure deployment generates Timer Triggers. Google and Lambda scheduled adapters exist, but their deployment commands do not yet provision Cloud Scheduler or EventBridge resources and reject Apps that declare schedules. A trigger may be duplicated by a provider or missed while a Node.js App is stopped, so scheduled work must be idempotent and must not rely on this MVP as a durable job queue. Overlapping runs of the same schedule are suppressed within one Node.js App process. Scheduled handlers are intended for short background work, not long-running job processing, and receive `ctx.user` as `null` because there is no request identity.
 
 ### Standalone Server
 
@@ -435,7 +435,7 @@ The command builds a temporary immutable Artifact, uploads it, and removes the t
 
 For rapid local iteration, an operator can mount a trusted source workspace into the Platform, configure `paths.apps`, add the App `name` and optional `route` to its `nosrv.yaml`, and use `nosrv link <platform-path>`. Linked source changes are watched and restarted automatically; `nosrv restart <name>` remains available for a manual reload. The Runtime Host also restarts unexpected exits with bounded backoff and keeps rotated persistent logs. Linked Apps intentionally have no versions or rollback history; see [Linked Apps for local iteration](https://github.com/asaday/nosrv-platform/blob/main/docs/platform.md#linked-apps-for-local-iteration).
 
-The CLI also exposes `platform list`, `info`, `start`, `stop`, `logs`, `versions`, `activate`, and `delete`. Every result supports `--json` for agents and scripts; deletion additionally requires `--yes`. See [CLI management](https://github.com/asaday/nosrv-platform/blob/main/docs/platform.md#cli-management).
+The CLI also exposes `list`, `info`, `start`, `stop`, `restart`, `logs`, `versions`, `activate`, `secrets`, `shared`, and `delete`. Management results support `--json` for agents and scripts; deletion additionally requires `--yes`. See [CLI management](https://github.com/asaday/nosrv-platform/blob/main/docs/platform.md#cli-management).
 
 Portable Artifact builds reject direct access to sensitive Node builtins such as `fs`, `child_process`, and raw networking. Use declared nosrv capabilities for portable services. Self-hosted Apps may declare absolute `permissions.filesystem.read` and `write` paths, and `permissions.childProcess: true`, while retaining Node's Permission Model, or use `permissions: "*"` only for fully trusted administration code. The `allowUnrestrictedApps` Platform setting gates this unrestricted form. This policy reduces accidental cross-service access but is not a substitute for an OS-level sandbox when executing untrusted code.
 

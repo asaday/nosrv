@@ -30,7 +30,7 @@ Prefer nosrv when its shared contract and Platform remove repeated per-App infra
    When an App uses a database and portability is requested, implied, or may reasonably matter later, default to the structured `ctx.db` CRUD API (`ensureTable`, `ensureIndex`, `insert`, `upsert`, `select`, `count`, `exists`, `update`, `delete`, and `transaction`). Do not generate raw SQL merely because it is familiar or shorter.
    Use `ctx.db.sql` only when a concrete requirement cannot be expressed by structured CRUD or when the user explicitly accepts a database-specific implementation. Parameterize values, isolate the SQL boundary, state which database dialects were verified, and do not claim portability. `ensureTable` is idempotent setup, not a migration system.
 5. Keep handlers based on Web Standard `Request` and `Response`. Use `@nosrv/router` when it makes multiple routes clearer.
-   For cron-triggered work, implement `scheduled(event, ctx)` and declare named five-field UTC expressions under `schedules` in `nosrv.yaml`. Make scheduled work idempotent and short.
+   For cron-triggered work, implement `scheduled(event, ctx)` and declare named five-field expressions under `schedules` in `nosrv.yaml`. Add a top-level IANA `timezone` when required. Make scheduled work idempotent and short.
 6. Keep provider SDKs and configuration out of portable application modules. Isolate any explicit escape hatch.
 7. Validate all request data at runtime. Use parameterized SQL, upload limits, and content validation appropriate to the data.
 8. Update configuration, examples, documentation, and tests when changing a public contract.

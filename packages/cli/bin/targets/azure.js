@@ -9,6 +9,7 @@ import {
   resolvePublicConfig,
   resolveResourcesDirectory,
   resolveSchedules,
+  resolveTimezone,
   workerName,
 } from "../project.js";
 import { resolveCloudPackage, resolvePostgresPackage } from "./packages.js";
@@ -87,6 +88,12 @@ async function generateAzureDeployment(cwd, appPath, config) {
     ? `import nosrvApp from ${JSON.stringify(appPath)};`
     : `const nosrvApp = { fetch() { return new Response("Not found", { status: 404 }); } };`;
   const schedules = resolveSchedules(config.schedules);
+  const timezone = resolveTimezone(config.timezone);
+  if (schedules.length && timezone && timezone !== "UTC") {
+    throw new Error(
+      `Azure Timer timezone is controlled by the Function App host; remove timezone, use UTC, or deploy to nosrv Platform`,
+    );
+  }
   const deployment = config.deploy?.azure ?? {};
   const authLevel = deployment.authLevel ?? "anonymous";
   const timerRegistrations = schedules

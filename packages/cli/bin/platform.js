@@ -369,9 +369,10 @@ function printPlatformApp(app, origin) {
     console.log(`Public assets: ${app.configuration.public ? "yes" : "no"}`);
     console.log(`Private resources: ${app.configuration.resources ? "yes" : "no"}`);
     if (app.configuration.schedules.length) {
+      console.log(`Timezone: ${app.configuration.timezone ?? "runtime local"}`);
       console.log("Schedules:");
       for (const schedule of app.configuration.schedules) {
-        console.log(`  ${schedule.name}: ${schedule.cron} ${schedule.timezone}`);
+        console.log(`  ${schedule.name}: ${schedule.cron}`);
       }
     } else console.log("Schedules: none");
   }

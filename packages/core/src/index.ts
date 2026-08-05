@@ -9,6 +9,23 @@ export interface AppSchedule {
   cron: string;
 }
 
+export function normalizeAppTimezone(value: unknown): string | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value !== "string" || !value.trim()) {
+    throw new TypeError("timezone must be a non-empty IANA time zone identifier");
+  }
+  const timezone = value.trim();
+  if (timezone !== "UTC" && !timezone.includes("/")) {
+    throw new TypeError(`Invalid IANA time zone identifier: ${timezone}`);
+  }
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: timezone }).format();
+  } catch {
+    throw new TypeError(`Invalid IANA time zone identifier: ${timezone}`);
+  }
+  return timezone;
+}
+
 export function isAppName(value: unknown): value is string {
   return typeof value === "string" && /^[a-z0-9](?:[a-z0-9-]{0,62})$/.test(value);
 }

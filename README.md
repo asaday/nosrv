@@ -385,12 +385,13 @@ export default defineApp({
 Declare its triggers in `nosrv.yaml`:
 
 ```yaml
+timezone: Asia/Tokyo
 schedules:
   - name: daily-cleanup
     cron: "0 3 * * *"
 ```
 
-Schedules use unique five-field cron expressions in UTC. Local Node.js and nosrv Platform execute them in the App process, Cloudflare deployment generates Cron Triggers, and Azure deployment generates Timer Triggers. Google and Lambda scheduled adapters exist, but their deployment commands do not yet provision Cloud Scheduler or EventBridge resources and reject Apps that declare schedules. A trigger may be duplicated by a provider or missed while a Node.js App is stopped, so scheduled work must be idempotent and must not rely on this MVP as a durable job queue. Overlapping runs of the same schedule are suppressed within one Node.js App process. Scheduled handlers are intended for short background work, not long-running job processing, and receive `ctx.user` as `null` because there is no request identity.
+Schedules use unique five-field cron expressions. An optional top-level IANA `timezone` applies to every schedule; otherwise local Node.js and nosrv Platform use the runtime process or OS local time zone. Specify `timezone: UTC` when UTC behavior must be explicit. Cloudflare Cron Triggers are UTC-only, and Azure Timer timezone is controlled by the Function App host, so those targets reject a non-UTC App timezone rather than silently changing its meaning. Google and Lambda scheduled adapters exist, but their deployment commands do not yet provision Cloud Scheduler or EventBridge resources and reject Apps that declare schedules. A trigger may be duplicated by a provider or missed while a Node.js App is stopped, so scheduled work must be idempotent and must not rely on this MVP as a durable job queue. Overlapping runs of the same schedule are suppressed within one Node.js App process. Scheduled handlers are intended for short background work, not long-running job processing, and receive `ctx.user` as `null` because there is no request identity.
 
 ### Standalone Server
 
@@ -529,7 +530,7 @@ az account set --subscription SUBSCRIPTION
 nosrv deploy --target azure --app FUNCTION_APP_NAME
 ```
 
-The Function App and its hosting plan/storage must already exist. Runtime values and secrets come from Function App settings or Key Vault references and are never written to generated source. Azure Blob Storage, Cosmos DB KV, PostgreSQL, static assets, handler-free static sites, and named five-field UTC schedules are supported. nosrv converts each schedule to an Azure six-field NCRONTAB Timer trigger.
+The Function App and its hosting plan/storage must already exist. Runtime values and secrets come from Function App settings or Key Vault references and are never written to generated source. Azure Blob Storage, Cosmos DB KV, PostgreSQL, static assets, handler-free static sites, and named five-field schedules are supported. nosrv converts each schedule to an Azure six-field NCRONTAB Timer trigger; the Function App host controls its timezone.
 
 ## Examples
 
@@ -544,7 +545,7 @@ The Function App and its hosting plan/storage must already exist. Runtime values
 - `examples/photo-diary` — database, object storage, and per-user data
 - `examples/react-spa` — optional React and Vite SPA with a nosrv API
 - `examples/static-site` — handler-free HTML, CSS, and JavaScript with no `nosrv.yaml`
-- `examples/scheduled` — portable UTC cron handler
+- `examples/scheduled` — portable cron handler with an explicit timezone
 - `examples/full-config` — runnable App with an intentionally verbose configuration reference
 
 Todo and Photo Diary run unchanged on local Node.js and the local Cloudflare runtime:

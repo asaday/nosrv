@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { cp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { basename, dirname, isAbsolute, relative, resolve, sep } from "node:path";
-import { isAppName, normalizeAppSchedules } from "@nosrv/core";
+import { isAppName, normalizeAppSchedules, normalizeAppTimezone } from "@nosrv/core";
 import { parse } from "yaml";
 
 export function projectName(directory) {
@@ -45,6 +45,7 @@ function validateConfigKeys(config) {
       "permissions",
       "auth",
       "schedules",
+      "timezone",
       "providers",
       "deploy",
     ],
@@ -133,6 +134,7 @@ export async function loadConfig(cwd, options = {}) {
     throw new Error('"spa" in nosrv.yaml must be true or false');
   }
   resolveMeta(config.meta);
+  resolveTimezone(config.timezone);
   return config;
 }
 
@@ -181,6 +183,10 @@ export function resolveResourcesDirectory(cwd) {
 
 export function resolveSchedules(configuredSchedules) {
   return normalizeAppSchedules(configuredSchedules);
+}
+
+export function resolveTimezone(configuredTimezone) {
+  return normalizeAppTimezone(configuredTimezone);
 }
 
 export function resolvePermissions(configuredPermissions) {

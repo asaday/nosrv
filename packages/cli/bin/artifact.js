@@ -14,6 +14,7 @@ import {
   resolvePublicConfig,
   resolveResourcesDirectory,
   resolveSchedules,
+  resolveTimezone,
   workerName,
   writeStaticApp,
 } from "./project.js";
@@ -111,6 +112,7 @@ export async function buildArtifact(args, options = {}) {
     throw new Error("route must be a non-empty string");
   }
   const schedules = resolveSchedules(config.schedules);
+  const timezone = resolveTimezone(config.timezone);
   const publicConfig = resolvePublicConfig(cwd, config.spa === true);
   const resourcesDirectory = resolveResourcesDirectory(cwd);
   const appPath = resolveApp(cwd, config.app, {
@@ -158,6 +160,7 @@ export async function buildArtifact(args, options = {}) {
       ...(route ? { route } : {}),
       ...(meta ? { meta } : {}),
       ...(schedules.length ? { schedules } : {}),
+      ...(timezone ? { timezone } : {}),
       ...(publicConfig?.spa ? { spa: true } : {}),
       ...(config.providers?.node ? { providers: { node: config.providers.node } } : {}),
       ...(permissions ? { permissions } : {}),
@@ -222,6 +225,7 @@ export async function runArtifact(args, runDev) {
   resolveEnvironment(config.env);
   resolveAuth(config.auth);
   resolveSchedules(config.schedules);
+  resolveTimezone(config.timezone);
   if (config.route !== undefined && (typeof config.route !== "string" || !config.route.trim())) {
     throw new Error("Artifact route must be a non-empty string");
   }

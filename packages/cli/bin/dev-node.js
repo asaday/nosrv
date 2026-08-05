@@ -11,6 +11,7 @@ import {
   resolvePublicConfig,
   resolveResourcesDirectory,
   resolveSchedules,
+  resolveTimezone,
   stagePublicDirectory,
   workerName,
   writeStaticApp,
@@ -245,6 +246,7 @@ export async function dev(args, options = {}) {
       : {}),
   };
   const schedules = resolveSchedules(config.schedules);
+  const timezone = resolveTimezone(config.timezone);
   if (schedules.length && typeof app.scheduled !== "function") {
     throw new Error("nosrv.yaml declares schedules but the app does not export scheduled()");
   }
@@ -258,60 +260,65 @@ export async function dev(args, options = {}) {
     const runScheduled = createScheduledRunner(app, runtimeOptions);
     for (const schedule of schedules) {
       let runningSchedule = false;
-      const job = new Cron(schedule.cron, { timezone: "UTC", protect: true }, async () => {
-        if (runningSchedule) {
-          console.warn(`Schedule skipped because its previous run is active: ${schedule.name}`);
-          return;
-        }
-        runningSchedule = true;
-        let started = Date.now();
-        if (process.env.NOSRV_SCHEDULE_CLAIM_URL) {
-          const token = process.env.NOSRV_SCHEDULE_CLAIM_TOKEN;
-          const appId = process.env.NOSRV_PLATFORM_APP_ID;
-          const instanceId = process.env.NOSRV_PLATFORM_INSTANCE_ID;
-          if (!token || !appId || !instanceId) {
-            console.error("Platform schedule claiming is not fully configured");
-            runningSchedule = false;
+      const job = new Cron(
+        schedule.cron,
+        { ...(timezone ? { timezone } : {}), protect: true },
+        async () => {
+          if (runningSchedule) {
+            console.warn(`Schedule skipped because its previous run is active: ${schedule.name}`);
             return;
           }
-          try {
-            const response = await fetch(process.env.NOSRV_SCHEDULE_CLAIM_URL, {
-              method: "POST",
-              headers: {
-                authorization: `Bearer ${token}`,
-                "content-type": "application/json",
-              },
-              body: JSON.stringify({ appId, scheduleName: schedule.name, instanceId }),
-            });
-            if (!response.ok) throw new Error(`Schedule claim failed with HTTP ${response.status}`);
-            const claim = await response.json();
-            if (!claim.claimed) {
-              console.log(`Schedule claimed by another instance: ${schedule.name}`);
+          runningSchedule = true;
+          let started = Date.now();
+          if (process.env.NOSRV_SCHEDULE_CLAIM_URL) {
+            const token = process.env.NOSRV_SCHEDULE_CLAIM_TOKEN;
+            const appId = process.env.NOSRV_PLATFORM_APP_ID;
+            const instanceId = process.env.NOSRV_PLATFORM_INSTANCE_ID;
+            if (!token || !appId || !instanceId) {
+              console.error("Platform schedule claiming is not fully configured");
               runningSchedule = false;
               return;
             }
-            started = claim.scheduledTime;
-          } catch (error) {
-            console.error(`Schedule claim failed: ${schedule.name}`, error);
-            runningSchedule = false;
-            return;
+            try {
+              const response = await fetch(process.env.NOSRV_SCHEDULE_CLAIM_URL, {
+                method: "POST",
+                headers: {
+                  authorization: `Bearer ${token}`,
+                  "content-type": "application/json",
+                },
+                body: JSON.stringify({ appId, scheduleName: schedule.name, instanceId }),
+              });
+              if (!response.ok)
+                throw new Error(`Schedule claim failed with HTTP ${response.status}`);
+              const claim = await response.json();
+              if (!claim.claimed) {
+                console.log(`Schedule claimed by another instance: ${schedule.name}`);
+                runningSchedule = false;
+                return;
+              }
+              started = claim.scheduledTime;
+            } catch (error) {
+              console.error(`Schedule claim failed: ${schedule.name}`, error);
+              runningSchedule = false;
+              return;
+            }
           }
-        }
-        console.log(`Schedule started: ${schedule.name}`);
-        try {
-          await runScheduled({
-            name: schedule.name,
-            cron: schedule.cron,
-            scheduledTime: started,
-            trigger: "cron",
-          });
-          console.log(`Schedule completed: ${schedule.name} (${Date.now() - started}ms)`);
-        } catch (error) {
-          console.error(`Schedule failed: ${schedule.name}`, error);
-        } finally {
-          runningSchedule = false;
-        }
-      });
+          console.log(`Schedule started: ${schedule.name}`);
+          try {
+            await runScheduled({
+              name: schedule.name,
+              cron: schedule.cron,
+              scheduledTime: started,
+              trigger: "cron",
+            });
+            console.log(`Schedule completed: ${schedule.name} (${Date.now() - started}ms)`);
+          } catch (error) {
+            console.error(`Schedule failed: ${schedule.name}`, error);
+          } finally {
+            runningSchedule = false;
+          }
+        },
+      );
       cronJobs.push(job);
     }
   }
@@ -320,7 +327,7 @@ export async function dev(args, options = {}) {
   console.log(`Local: http://${running.hostname}:${running.port}`);
   if (schedules.length)
     console.log(
-      `Schedules: ${schedules.map((schedule) => `${schedule.name} (${schedule.cron} UTC)`).join(", ")}`,
+      `Schedules: ${schedules.map((schedule) => `${schedule.name} (${schedule.cron} ${timezone ?? "runtime local"})`).join(", ")}`,
     );
 
   const shutdown = () => {

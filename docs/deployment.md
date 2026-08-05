@@ -326,7 +326,7 @@ deploy:
     # slot: staging
 ```
 
-Secrets and environment values stay in Function App settings or Key Vault references and need no declaration in App code. Do not put secret values in `nosrv.yaml`. Configure non-secret resource identifiers under `providers.azure`: Blob Storage uses a container and `AZURE_STORAGE_CONNECTION_STRING` by default, Cosmos DB KV uses a database/container and `AZURE_COSMOS_CONNECTION_STRING`, and PostgreSQL uses `DATABASE_URL`. Environment variable names are configurable. Each five-field UTC nosrv schedule is registered as a six-field Azure NCRONTAB expression by prepending seconds (`0`). Timer coordination relies on `AzureWebJobsStorage`; failed timer invocations are not automatically retried.
+Secrets and environment values stay in Function App settings or Key Vault references and need no declaration in App code. Do not put secret values in `nosrv.yaml`. Configure non-secret resource identifiers under `providers.azure`: Blob Storage uses a container and `AZURE_STORAGE_CONNECTION_STRING` by default, Cosmos DB KV uses a database/container and `AZURE_COSMOS_CONNECTION_STRING`, and PostgreSQL uses `DATABASE_URL`. Environment variable names are configurable. Each five-field nosrv schedule is registered as a six-field Azure NCRONTAB expression by prepending seconds (`0`). Timer timezone is controlled by the Function App host; deployment rejects an explicit non-UTC App `timezone` because nosrv cannot guarantee that host setting. Timer coordination relies on `AzureWebJobsStorage`; failed timer invocations are not automatically retried.
 
 ## Shared implementation requirements
 

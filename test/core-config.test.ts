@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { isAppName, normalizeAppSchedules } from "@nosrv/core";
+import { isAppName, normalizeAppSchedules, normalizeAppTimezone } from "@nosrv/core";
 
 test("normalizes the shared App name and schedule contract", () => {
   assert.equal(isAppName("app--variant"), true);
@@ -31,4 +31,15 @@ test("normalizes the shared App name and schedule contract", () => {
       ]),
     /Duplicate cron expression/,
   );
+});
+
+test("normalizes an optional App schedule timezone", () => {
+  assert.equal(normalizeAppTimezone(undefined), undefined);
+  assert.equal(normalizeAppTimezone(" Asia/Tokyo "), "Asia/Tokyo");
+  assert.equal(normalizeAppTimezone("UTC"), "UTC");
+  assert.throws(() => normalizeAppTimezone(""), /non-empty IANA time zone/);
+  assert.throws(() => normalizeAppTimezone("Not/A_Timezone"), /Invalid IANA time zone/);
+  assert.throws(() => normalizeAppTimezone("+09:00"), /Invalid IANA time zone/);
+  assert.throws(() => normalizeAppTimezone("JST"), /Invalid IANA time zone/);
+  assert.throws(() => normalizeAppTimezone(9), /non-empty IANA time zone/);
 });

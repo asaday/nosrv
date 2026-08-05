@@ -53,7 +53,7 @@ schedules:
     cron: "0 3 * * *"
 ```
 
-Schedules use five-field UTC cron expressions. They are not durable queues and may be duplicated or missed while a Node App is stopped.
+Schedules use five-field cron expressions. A top-level IANA `timezone` applies to all schedules; when omitted, Node.js and Platform use runtime local time. They are not durable queues and may be duplicated or missed while a Node App is stopped.
 
 ## Static assets and private resources
 

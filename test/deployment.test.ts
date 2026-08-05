@@ -39,6 +39,25 @@ test("embeds private resources in the Cloudflare Worker bundle input", async () 
   }
 });
 
+test("rejects an App timezone unsupported by Cloudflare Cron Triggers", async () => {
+  const directory = await fixture();
+  try {
+    await writeFile(
+      resolve(directory, "nosrv.yaml"),
+      "app: ./src/app.ts\ntimezone: Asia/Tokyo\nschedules:\n  - name: cleanup\n    cron: '0 3 * * *'\n",
+      "utf8",
+    );
+    await assert.rejects(
+      exec(process.execPath, [cli, "deploy", "--target", "cloudflare", "--dry-run"], {
+        cwd: directory,
+      }),
+      /Cloudflare Cron Triggers do not support App timezone Asia\/Tokyo/,
+    );
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
 test("generates a self-contained Google Functions staging project", async () => {
   const directory = await fixture();
   try {
@@ -181,6 +200,25 @@ test("generates an Azure Functions staging project with assets and timers", asyn
     assert.match(await readFile(resolve(output, "host.json"), "utf8"), /routePrefix/);
     const pkg = JSON.parse(await readFile(resolve(output, "package.json"), "utf8"));
     assert.equal(pkg.dependencies["@azure/functions"], "^4.7.0");
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("rejects an App timezone not controlled by Azure deployment", async () => {
+  const directory = await fixture();
+  try {
+    await writeFile(
+      resolve(directory, "nosrv.yaml"),
+      "app: ./src/app.ts\ntimezone: Asia/Tokyo\nschedules:\n  - name: cleanup\n    cron: '0 3 * * *'\n",
+      "utf8",
+    );
+    await assert.rejects(
+      exec(process.execPath, [cli, "deploy", "--target", "azure", "--dry-run"], {
+        cwd: directory,
+      }),
+      /Azure Timer timezone is controlled by the Function App host/,
+    );
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

@@ -143,15 +143,17 @@ export default defineApp({
 });
 ```
 
-Declare named five-field UTC cron expressions in `nosrv.yaml`:
+Declare named five-field cron expressions in `nosrv.yaml`:
 
 ```yaml
+timezone: Asia/Tokyo # Optional; applies to every schedule.
 schedules:
   - name: daily-cleanup
     cron: "0 3 * * *"
 ```
 
 - Make work idempotent: providers may duplicate a trigger, and the Node.js MVP may miss one while an App is stopped.
+- `timezone` accepts an IANA time-zone identifier. When omitted, Node.js and nosrv Platform use the runtime process or OS local time zone. Specify `UTC` when UTC behavior must be portable and explicit. Some public-cloud schedulers cannot apply an App-specific time zone.
 - Portable schedules use five standard cron fields with numeric values, `*`, lists, ranges, and steps; English month and weekday names are also accepted. Schedule names and normalized cron expressions must be unique within an App.
 - Keep scheduled work short; do not use it as a long-running worker.
 - `ctx.user` is `null` in a scheduled handler because there is no request identity.

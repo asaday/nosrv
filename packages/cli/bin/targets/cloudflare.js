@@ -10,6 +10,7 @@ import {
   resolvePublicConfig,
   resolveResourcesDirectory,
   resolveSchedules,
+  resolveTimezone,
   stagePublicDirectory,
   workerName,
   writeStaticApp,
@@ -49,6 +50,12 @@ async function generateCloudflare(cwd, appPath, config) {
   const kvBinding = kv ? "NOSRV_KV" : undefined;
   const d1Binding = db ? "NOSRV_DB" : undefined;
   const schedules = resolveSchedules(config.schedules);
+  const timezone = resolveTimezone(config.timezone);
+  if (schedules.length && timezone && timezone !== "UTC") {
+    throw new Error(
+      `Cloudflare Cron Triggers do not support App timezone ${timezone}; use UTC or deploy to nosrv Platform`,
+    );
+  }
   const adapterOptions = [
     resolveEnvironment(config.env)
       ? "env: " + JSON.stringify(resolveEnvironment(config.env))

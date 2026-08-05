@@ -55,18 +55,14 @@ async function createProject(directoryArgument, template = "basic") {
     throw new Error(`Unknown template: ${template}`);
   const directory = resolve(process.cwd(), directoryArgument);
   const checkoutRoot = resolve(import.meta.dirname, "../../..");
-  const checkoutCli = resolve(checkoutRoot, "packages/cli");
   const checkoutCore = resolve(checkoutRoot, "packages/core");
   const usesCheckout = existsSync(resolve(checkoutCore, "package.json"));
   const coreDependency = usesCheckout
     ? `file:${relative(directory, checkoutCore).split(sep).join("/")}`
     : `^${packageManifest.version}`;
-  const cliDependency = usesCheckout
-    ? `file:${relative(directory, checkoutCli).split(sep).join("/")}`
-    : `^${packageManifest.version}`;
   const scripts = {
-    dev: "nosrv dev",
-    deploy: "nosrv deploy",
+    dev: "npx nosrv dev",
+    deploy: "npx nosrv deploy",
   };
   const agentInstructions = `# nosrv application\n\n- Use Web Standard Request and Response.\n- Export the application with defineApp().\n- Declare required database, KV, and storage capabilities and access them through ctx.\n- Use runtime-provided ctx.env, ctx.secrets, ctx.resources, and ctx.user without declaring them.\n- Put immutable private files under resources/ and read them with ctx.resources; use public/ only for browser-visible assets.\n- Do not import cloud-provider SDKs into portable application code.\n- Keep backend routes under /api when serving a frontend.\n- Use relative browser URLs such as ./app.js and api/items so Platform route prefixes keep working.\n- Validate request data at runtime.\n- For cron work, export scheduled(event, ctx), declare five-field UTC schedules in nosrv.yaml, and keep the work short and idempotent. Cloudflare and Azure deployment generate scheduler triggers; Google and Lambda deployment do not yet provision scheduler resources.\n- Default to plain HTML, CSS, and JavaScript unless UI complexity justifies a framework.\n- Run the application with nosrv dev and verify important success and error responses.\n- Deploy to Platform with nosrv deploy, or select Cloudflare, Google Functions, Lambda, or Azure Functions with nosrv deploy --target <target>. Keep non-development Platform tokens in NOSRV_TOKEN, not nosrv.yaml.\n`;
   const basicFiles = {
@@ -81,7 +77,6 @@ async function createProject(directoryArgument, template = "basic") {
         type: "module",
         scripts,
         dependencies: { "@nosrv/core": coreDependency },
-        devDependencies: { nosrv: cliDependency },
         engines: { node: ">=24" },
       },
       null,
@@ -105,7 +100,6 @@ async function createProject(directoryArgument, template = "basic") {
         scripts: { ...scripts, "dev:web": "vite", build: "vite build" },
         dependencies: { "@nosrv/core": coreDependency, react: "^19.2.0", "react-dom": "^19.2.0" },
         devDependencies: {
-          nosrv: cliDependency,
           "@vitejs/plugin-react": "^6.0.3",
           vite: "^8.1.5",
         },

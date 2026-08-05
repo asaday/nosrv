@@ -26,7 +26,7 @@ Usage:
   nosrv create <directory> [--template <basic|react>]
   nosrv studio import <directory> [--mode <copy|link>] [--name <name>]
   nosrv build [--output <directory>]
-  nosrv run <artifact-directory> [--port <number>] [--host <hostname>]
+  nosrv run <artifact-directory> [--port <number>] [--host <hostname>] [--disable-schedules]
   nosrv dev [--target <node|cloudflare|google-functions|lambda>] [--port <number>] [--host <hostname>]
   nosrv deploy [--target <platform|cloudflare|google-functions|lambda|azure>] [target options]
   nosrv login [--url <platform-url>] [--header <name:value>...]

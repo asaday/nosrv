@@ -1,4 +1,5 @@
 import { existsSync } from "node:fs";
+import { timingSafeEqual } from "node:crypto";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { Cron } from "croner";
@@ -27,6 +28,13 @@ function readOption(args, name) {
 }
 function readTarget(args, fallback = "node") {
   return readOption(args, "--target") ?? readOption(args, "-t") ?? fallback;
+}
+
+function authorizedToken(request, expected) {
+  const supplied = request.headers.get("authorization")?.replace(/^Bearer /, "") ?? "";
+  const actual = Buffer.from(supplied);
+  const wanted = Buffer.from(expected);
+  return actual.length === wanted.length && timingSafeEqual(actual, wanted);
 }
 
 export async function dev(args, options = {}) {
@@ -210,6 +218,7 @@ export async function dev(args, options = {}) {
       "AWS_S3_FORCE_PATH_STYLE",
       "GOOGLE_APPLICATION_CREDENTIALS",
       "NOSRV_SCHEDULE_CLAIM_TOKEN",
+      "NOSRV_SCHEDULE_RUN_TOKEN",
       ...(databaseUrlEnv ? [databaseUrlEnv] : []),
       ...(process.env.NOSRV_IDENTITY_SECRET ? ["NOSRV_IDENTITY_SECRET"] : []),
       ...(process.env.NOSRV_APP_SECRETS_JSON ? ["NOSRV_APP_SECRETS_JSON"] : []),
@@ -247,28 +256,87 @@ export async function dev(args, options = {}) {
   };
   const schedules = resolveSchedules(config.schedules);
   const timezone = resolveTimezone(config.timezone);
+  const schedulesDisabled = args.includes("--disable-schedules");
   if (schedules.length && typeof app.scheduled !== "function") {
     throw new Error("nosrv.yaml declares schedules but the app does not export scheduled()");
   }
   if (!schedules.length && typeof app.scheduled === "function") {
     console.warn("App exports scheduled() but nosrv.yaml declares no schedules");
   }
-  const running = await listen(app, runtimeOptions);
+  const { createScheduledRunner } = schedules.length
+    ? await import("nosrv/runtime/node")
+    : { createScheduledRunner: undefined };
+  const runScheduled = createScheduledRunner?.(app, runtimeOptions);
+  const runningSchedules = new Set();
+  const executeSchedule = async (schedule, trigger, scheduledTime) => {
+    if (runningSchedules.has(schedule.name)) {
+      throw new Error(`Schedule is already running: ${schedule.name}`);
+    }
+    runningSchedules.add(schedule.name);
+    console.log(`Schedule started: ${schedule.name} (${trigger})`);
+    try {
+      await runScheduled({
+        name: schedule.name,
+        cron: schedule.cron,
+        scheduledTime,
+        trigger,
+      });
+      console.log(`Schedule completed: ${schedule.name} (${Date.now() - scheduledTime}ms)`);
+    } finally {
+      runningSchedules.delete(schedule.name);
+    }
+  };
+  const scheduleRunToken = process.env.NOSRV_SCHEDULE_RUN_TOKEN;
+  const servedApp = scheduleRunToken
+    ? {
+        ...app,
+        async fetch(request, context) {
+          const match = new URL(request.url).pathname.match(
+            /^\/_nosrv\/runtime\/schedules\/([^/]+)\/run$/,
+          );
+          if (!match) return app.fetch(request, context);
+          if (request.method !== "POST") {
+            return Response.json({ error: "Method not allowed" }, { status: 405 });
+          }
+          if (!authorizedToken(request, scheduleRunToken)) {
+            return Response.json({ error: "Runtime authentication required" }, { status: 401 });
+          }
+          const name = decodeURIComponent(match[1]);
+          const schedule = schedules.find((candidate) => candidate.name === name);
+          if (!schedule) return Response.json({ error: "Schedule not found" }, { status: 404 });
+          const scheduledTime = Date.now();
+          try {
+            await executeSchedule(schedule, "manual", scheduledTime);
+            return Response.json({
+              name: schedule.name,
+              cron: schedule.cron,
+              scheduledTime,
+              trigger: "manual",
+              status: "completed",
+            });
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            console.error(`Schedule failed: ${schedule.name}`, error);
+            return Response.json(
+              { error: message },
+              { status: message.startsWith("Schedule is already running:") ? 409 : 500 },
+            );
+          }
+        },
+      }
+    : app;
+  const running = await listen(servedApp, runtimeOptions);
   const cronJobs = [];
-  if (schedules.length) {
-    const { createScheduledRunner } = await import("nosrv/runtime/node");
-    const runScheduled = createScheduledRunner(app, runtimeOptions);
+  if (schedules.length && !schedulesDisabled) {
     for (const schedule of schedules) {
-      let runningSchedule = false;
       const job = new Cron(
         schedule.cron,
         { ...(timezone ? { timezone } : {}), protect: true },
         async () => {
-          if (runningSchedule) {
+          if (runningSchedules.has(schedule.name)) {
             console.warn(`Schedule skipped because its previous run is active: ${schedule.name}`);
             return;
           }
-          runningSchedule = true;
           let started = Date.now();
           if (process.env.NOSRV_SCHEDULE_CLAIM_URL) {
             const token = process.env.NOSRV_SCHEDULE_CLAIM_TOKEN;
@@ -276,7 +344,6 @@ export async function dev(args, options = {}) {
             const instanceId = process.env.NOSRV_PLATFORM_INSTANCE_ID;
             if (!token || !appId || !instanceId) {
               console.error("Platform schedule claiming is not fully configured");
-              runningSchedule = false;
               return;
             }
             try {
@@ -293,29 +360,18 @@ export async function dev(args, options = {}) {
               const claim = await response.json();
               if (!claim.claimed) {
                 console.log(`Schedule claimed by another instance: ${schedule.name}`);
-                runningSchedule = false;
                 return;
               }
               started = claim.scheduledTime;
             } catch (error) {
               console.error(`Schedule claim failed: ${schedule.name}`, error);
-              runningSchedule = false;
               return;
             }
           }
-          console.log(`Schedule started: ${schedule.name}`);
           try {
-            await runScheduled({
-              name: schedule.name,
-              cron: schedule.cron,
-              scheduledTime: started,
-              trigger: "cron",
-            });
-            console.log(`Schedule completed: ${schedule.name} (${Date.now() - started}ms)`);
+            await executeSchedule(schedule, "cron", started);
           } catch (error) {
             console.error(`Schedule failed: ${schedule.name}`, error);
-          } finally {
-            runningSchedule = false;
           }
         },
       );
@@ -325,7 +381,9 @@ export async function dev(args, options = {}) {
   console.log(`nosrv dev server`);
   console.log(`App: ${appPath ?? "(static only)"}`);
   console.log(`Local: http://${running.hostname}:${running.port}`);
-  if (schedules.length)
+  if (schedules.length && schedulesDisabled) {
+    console.log("Schedules: automatic execution disabled");
+  } else if (schedules.length)
     console.log(
       `Schedules: ${schedules.map((schedule) => `${schedule.name} (${schedule.cron} ${timezone ?? "runtime local"})`).join(", ")}`,
     );

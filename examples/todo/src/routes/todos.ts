@@ -1,4 +1,4 @@
-import { noContent, readJson, type Router } from "@nosrv/router";
+import { noContent, readJson, type Router } from "@nosrv/core";
 import { listTodos } from "../database.ts";
 
 type Requirements = { readonly db: true };

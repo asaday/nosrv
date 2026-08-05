@@ -3,7 +3,7 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import test from "node:test";
-import { serveSpaFallback, serveStaticFile } from "@nosrv/provider-static-files";
+import { serveSpaFallback, serveStaticFile } from "nosrv/runtime/static-files";
 
 const publicDirectory = resolve("examples/todo/public");
 

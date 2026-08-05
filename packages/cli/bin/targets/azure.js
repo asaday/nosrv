@@ -11,6 +11,7 @@ import {
   resolveSchedules,
   workerName,
 } from "../project.js";
+import { resolveCloudPackage, resolvePostgresPackage } from "./packages.js";
 import { bundleDeployment, readOption } from "./shared.js";
 
 function required(value, message) {
@@ -37,6 +38,8 @@ async function generateAzureDeployment(cwd, appPath, config) {
   const storage = provider.storage;
   const kv = provider.kv;
   const postgres = postgresDatabaseConfig(cwd, config, "azure");
+  const azurePackage = resolveCloudPackage(cwd, "azure");
+  const postgresPackage = postgres ? resolvePostgresPackage(cwd, "Azure Functions") : null;
   if (storage && (storage.provider ?? "azure-blob") !== "azure-blob")
     throw new Error(`Unsupported Azure storage provider: ${storage.provider}`);
   if (kv && (kv.provider ?? "cosmos") !== "cosmos")
@@ -77,9 +80,9 @@ async function generateAzureDeployment(cwd, appPath, config) {
     .join(", ");
 
   const require = createRequire(import.meta.url);
-  const adapterPath = require.resolve("@nosrv/adapter-azure-functions");
-  const resourceProviderPath = require.resolve("@nosrv/provider-filesystem");
-  const postgresProviderPath = require.resolve("@nosrv/provider-postgres");
+  const adapterPath = azurePackage.entryPath;
+  const resourceProviderPath = resolve(import.meta.dirname, "../../dist/filesystem.js");
+  const postgresProviderPath = postgresPackage?.entryPath;
   const appImport = appPath
     ? `import nosrvApp from ${JSON.stringify(appPath)};`
     : `const nosrvApp = { fetch() { return new Response("Not found", { status: 404 }); } };`;

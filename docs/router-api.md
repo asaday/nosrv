@@ -1,14 +1,14 @@
 # nosrv Router API
 
-`@nosrv/router` is an optional Fetch API-native routing layer for nosrv Apps. It organizes multiple HTTP routes, middleware, request body parsing, cookies, and composed Apps without replacing the Web Standard `Request` and `Response` contract.
+`@nosrv/core` includes an optional Fetch API-native routing layer for nosrv Apps. It organizes multiple HTTP routes, middleware, request body parsing, cookies, and composed Apps without replacing the Web Standard `Request` and `Response` contract.
 
-The exported TypeScript interfaces in [`packages/router/src/index.ts`](../packages/router/src/index.ts) are the source of truth for this API.
+The exported TypeScript interfaces in [`packages/core/src/router.ts`](../packages/core/src/router.ts) are the source of truth for this API.
 
 ## Quick start
 
 ```ts
 import { defineApp } from "@nosrv/core";
-import { createRouter, HttpError, readJson } from "@nosrv/router";
+import { createRouter, HttpError, readJson } from "@nosrv/core";
 
 const requires = { db: true } as const;
 const router = createRouter<typeof requires>();
@@ -515,7 +515,7 @@ Returns a cookie string with an epoch expiration and `Max-Age=0`. Use the same `
 
 ## Router scope
 
-`@nosrv/router` intentionally provides only HTTP dispatch and small Web API helpers.
+The Router API in `@nosrv/core` intentionally provides only HTTP dispatch and small Web API helpers.
 
 It does not provide:
 

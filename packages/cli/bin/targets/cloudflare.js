@@ -3,6 +3,7 @@ import { spawn } from "node:child_process";
 import { createRequire } from "node:module";
 import { dirname, resolve } from "node:path";
 import { embeddedResourcesExpression } from "../artifact.js";
+import { resolveCloudPackage } from "./packages.js";
 import {
   moduleSpecifier,
   resolveEnvironment,
@@ -30,8 +31,8 @@ async function generateCloudflare(cwd, appPath, config) {
   const publicDirectory = publicConfig?.directory;
   const resourcesDirectory = resolveResourcesDirectory(cwd);
   const embeddedResources = await embeddedResourcesExpression(resourcesDirectory);
-  const require = createRequire(import.meta.url);
-  const wranglerDirectory = dirname(require.resolve("wrangler/package.json"));
+  const cloudflarePackage = resolveCloudPackage(cwd, "cloudflare");
+  const wranglerDirectory = dirname(cloudflarePackage.require.resolve("wrangler/package.json"));
   const schemaPath = resolve(wranglerDirectory, "config-schema.json");
   const storage = config.providers?.cloudflare?.storage;
   const kv = config.providers?.cloudflare?.kv;
@@ -60,8 +61,8 @@ async function generateCloudflare(cwd, appPath, config) {
   ]
     .filter(Boolean)
     .join(", ");
-  const adapterPath = require.resolve("@nosrv/adapter-cloudflare");
-  const corePath = require.resolve("@nosrv/core");
+  const adapterPath = cloudflarePackage.entryPath;
+  const corePath = cloudflarePackage.require.resolve("@nosrv/core");
   const entry = `import { createCloudflareHandler } from ${JSON.stringify(adapterPath)};\nimport { MemoryResources } from ${JSON.stringify(corePath)};\nimport app from ${JSON.stringify(moduleSpecifier(outputDirectory, resolvedAppPath))};\n\nexport default createCloudflareHandler(app${adapterOptions ? `, { ${adapterOptions} }` : ""});\n`;
   const wranglerConfig = {
     $schema: schemaPath,

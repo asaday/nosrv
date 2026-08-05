@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { createCloudflareHandler } from "@nosrv/adapter-cloudflare";
+import { createCloudflareHandler } from "@nosrv/cloudflare";
 import { defineApp, MemoryResources } from "@nosrv/core";
 
 test("runs a portable app as a Cloudflare fetch handler", async () => {

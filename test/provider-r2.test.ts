@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { R2ObjectStorage, type R2BucketLike } from "@nosrv/provider-r2";
+import { R2ObjectStorage, type R2BucketLike } from "@nosrv/cloudflare";
 
 test("buffers streams before uploading them to R2", async () => {
   let uploaded: unknown;

@@ -482,3 +482,6 @@ export function validateCapabilities(app: NosrvApp, context: AppContext): void {
     throw new Error("Required capability is unavailable: storage");
   if (app.requires?.db && !context.db) throw new Error("Required capability is unavailable: db");
 }
+
+export * from "./router.js";
+export * from "./sql.js";

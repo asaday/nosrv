@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { DatabaseRow, DatabaseSql, SqlValue } from "@nosrv/core";
-import { PortableSqlDatabase, type SqlDialect } from "@nosrv/provider-sql";
+import { PortableSqlDatabase, type SqlDialect } from "@nosrv/core";
 
 function recordingDatabase(dialect: SqlDialect, rows: DatabaseRow[] = []) {
   const calls: { sql: string; params: readonly SqlValue[] }[] = [];

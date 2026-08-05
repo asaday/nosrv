@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import azureFunctions from "@azure/functions";
-import { createAzureHttpHandler, createAzureTimerHandler } from "@nosrv/adapter-azure-functions";
+import { createAzureHttpHandler, createAzureTimerHandler } from "@nosrv/azure";
 import { defineApp } from "@nosrv/core";
 
 const { HttpRequest } = azureFunctions;

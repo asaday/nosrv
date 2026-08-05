@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { CloudflareKV, type WorkersKVNamespaceLike } from "@nosrv/provider-cloudflare-kv";
+import { CloudflareKV, type WorkersKVNamespaceLike } from "@nosrv/cloudflare";
 
 test("Cloudflare KV maps expiration and list pagination", async () => {
   let putOptions: { expiration?: number } | undefined;

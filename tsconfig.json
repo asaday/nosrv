@@ -4,9 +4,18 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "paths": {
-      "@nosrv/adapter-azure-functions": ["./packages/adapter-azure-functions/src/index.ts"],
-      "@nosrv/provider-azure-blob": ["./packages/provider-azure-blob/src/index.ts"],
-      "@nosrv/provider-cosmos": ["./packages/provider-cosmos/src/index.ts"]
+      "@nosrv/core": ["./packages/core/src/index.ts"],
+      "@nosrv/cloudflare": ["./packages/cloudflare/src/index.ts"],
+      "@nosrv/aws": ["./packages/aws/src/index.ts"],
+      "@nosrv/google-cloud": ["./packages/google-cloud/src/index.ts"],
+      "@nosrv/azure": ["./packages/azure/src/index.ts"],
+      "@nosrv/postgres": ["./packages/postgres/src/index.ts"],
+      "@nosrv/redis": ["./packages/redis/src/index.ts"],
+      "nosrv/runtime/filesystem": ["./packages/cli/src/filesystem.ts"],
+      "nosrv/runtime/memory": ["./packages/cli/src/memory.ts"],
+      "nosrv/runtime/node": ["./packages/cli/src/runtime-node.ts"],
+      "nosrv/runtime/sqlite": ["./packages/cli/src/sqlite.ts"],
+      "nosrv/runtime/static-files": ["./packages/cli/src/static-files.ts"]
     },
     "allowImportingTsExtensions": true,
     "strict": true,

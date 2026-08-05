@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { PutItemCommand, ScanCommand } from "@aws-sdk/client-dynamodb";
-import { DynamoDBKV } from "@nosrv/provider-dynamodb";
+import { DynamoDBKV } from "@nosrv/aws";
 
 test("DynamoDB KV maps expiration and opaque scan cursors", async () => {
   const commands: unknown[] = [];

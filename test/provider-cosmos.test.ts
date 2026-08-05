@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { CosmosKV } from "@nosrv/provider-cosmos";
+import { CosmosKV } from "@nosrv/azure";
 
 test("Cosmos KV maps expiration and continuation cursors", async () => {
   let upserted: Record<string, unknown> | undefined;

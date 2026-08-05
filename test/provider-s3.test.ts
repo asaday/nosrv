@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { S3ObjectStorage } from "@nosrv/provider-s3";
+import { S3ObjectStorage } from "@nosrv/aws";
 
 test("S3 storage prefixes Platform App keys without exposing the prefix", async () => {
   const inputs: Array<Record<string, unknown>> = [];

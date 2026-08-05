@@ -81,7 +81,7 @@ export async function dev(args, options = {}) {
   const resolvedAppPath =
     appPath ?? (await writeStaticApp(resolve(generatedRoot, "static-app.mjs")));
   if (process.env.NOSRV_BUNDLED_APP !== "true") await registerTypeScript(cwd, resolvedAppPath);
-  const { listen, resolveSignedPlatformUser } = await import("@nosrv/runtime-node");
+  const { listen, resolveSignedPlatformUser } = await import("nosrv/runtime/node");
   const module = await import(pathToFileURL(resolvedAppPath).href);
   const app = module.default?.fetch ? module.default : module.default?.default;
   if (!app || typeof app.fetch !== "function") {
@@ -105,12 +105,12 @@ export async function dev(args, options = {}) {
         throw new Error(
           "Redis Platform KV requires NOSRV_PLATFORM_REDIS_URL and NOSRV_PLATFORM_APP_ID",
         );
-      const { RedisKV } = await import("@nosrv/provider-redis");
+      const { RedisKV } = await import("@nosrv/redis");
       kv = new RedisKV(url, `nosrv:${platformAppId}:`);
     } else if (platformDataDirectory && platformKVBackend !== "sqlite") {
       throw new Error(`Unsupported Platform KV backend: ${platformKVBackend}`);
     } else if (nodeKV?.provider === "sqlite" || !nodeKV?.provider) {
-      const { SQLiteKV } = await import("@nosrv/provider-sqlite");
+      const { SQLiteKV } = await import("nosrv/runtime/sqlite");
       kv = new SQLiteKV(
         platformDataDirectory
           ? resolve(platformDataDirectory, "kv.sqlite")
@@ -124,13 +124,13 @@ export async function dev(args, options = {}) {
   if (platformDataDirectory && app.requires?.storage && platformStorageBackend === "s3") {
     const bucket = process.env.NOSRV_PLATFORM_STORAGE_BUCKET;
     if (!bucket) throw new Error("S3 Platform storage requires NOSRV_PLATFORM_STORAGE_BUCKET");
-    const { S3ObjectStorage } = await import("@nosrv/provider-s3");
+    const { S3ObjectStorage } = await import("@nosrv/aws");
     if (!platformAppId) throw new Error("S3 Platform storage requires NOSRV_PLATFORM_APP_ID");
     storage = new S3ObjectStorage(bucket, undefined, `apps/${platformAppId}/`);
   } else if (platformDataDirectory && app.requires?.storage && platformStorageBackend === "gcs") {
     const bucket = process.env.NOSRV_PLATFORM_STORAGE_BUCKET;
     if (!bucket) throw new Error("GCS Platform storage requires NOSRV_PLATFORM_STORAGE_BUCKET");
-    const { GCSObjectStorage } = await import("@nosrv/provider-gcs");
+    const { GCSObjectStorage } = await import("@nosrv/google-cloud");
     if (!platformAppId) throw new Error("GCS Platform storage requires NOSRV_PLATFORM_APP_ID");
     storage = new GCSObjectStorage(bucket, undefined, `apps/${platformAppId}/`);
   } else if (
@@ -140,13 +140,13 @@ export async function dev(args, options = {}) {
   ) {
     throw new Error(`Unsupported Platform storage backend: ${platformStorageBackend}`);
   } else if (nodeStorage?.provider === "memory") {
-    const { MemoryObjectStorage } = await import("@nosrv/provider-memory");
+    const { MemoryObjectStorage } = await import("nosrv/runtime/memory");
     storage = new MemoryObjectStorage();
   } else if (
     (nodeStorage || app.requires?.storage) &&
     (nodeStorage?.provider ?? "filesystem") === "filesystem"
   ) {
-    const { FilesystemObjectStorage } = await import("@nosrv/provider-filesystem");
+    const { FilesystemObjectStorage } = await import("nosrv/runtime/filesystem");
     storage = new FilesystemObjectStorage(
       platformDataDirectory
         ? resolve(platformDataDirectory, "storage")
@@ -165,12 +165,12 @@ export async function dev(args, options = {}) {
       throw new Error(
         "PostgreSQL Platform DB requires NOSRV_PLATFORM_POSTGRES_URL and NOSRV_PLATFORM_APP_ID",
       );
-    const { PostgresDatabase } = await import("@nosrv/provider-postgres");
+    const { PostgresDatabase } = await import("@nosrv/postgres");
     db = new PostgresDatabase(url, platformAppId);
   } else if (app.requires?.db && platformDataDirectory && platformDBBackend !== "sqlite") {
     throw new Error(`Unsupported Platform DB backend: ${platformDBBackend}`);
   } else if (nodeDatabase?.provider === "sqlite" || (!nodeDatabase?.provider && app.requires?.db)) {
-    const { SQLiteDatabase } = await import("@nosrv/provider-sqlite");
+    const { SQLiteDatabase } = await import("nosrv/runtime/sqlite");
     db = new SQLiteDatabase(
       platformDataDirectory
         ? resolve(platformDataDirectory, "database.sqlite")
@@ -185,7 +185,7 @@ export async function dev(args, options = {}) {
     const appId = nodeDatabase.appId ?? workerName(cwd, config);
     if (typeof appId !== "string" || !appId)
       throw new Error("Node.js PostgreSQL database appId must be a non-empty string");
-    const { PostgresDatabase } = await import("@nosrv/provider-postgres");
+    const { PostgresDatabase } = await import("@nosrv/postgres");
     db = new PostgresDatabase(url, appId);
   } else if (nodeDatabase?.provider) {
     throw new Error(`Unsupported Node.js database provider: ${nodeDatabase.provider}`);
@@ -225,7 +225,7 @@ export async function dev(args, options = {}) {
     ...(db ? { db } : {}),
     ...(resourcesDirectory
       ? {
-          resources: new (await import("@nosrv/provider-filesystem")).FilesystemResources(
+          resources: new (await import("nosrv/runtime/filesystem")).FilesystemResources(
             resourcesDirectory,
           ),
         }
@@ -254,7 +254,7 @@ export async function dev(args, options = {}) {
   const running = await listen(app, runtimeOptions);
   const cronJobs = [];
   if (schedules.length) {
-    const { createScheduledRunner } = await import("@nosrv/runtime-node");
+    const { createScheduledRunner } = await import("nosrv/runtime/node");
     const runScheduled = createScheduledRunner(app, runtimeOptions);
     for (const schedule of schedules) {
       let runningSchedule = false;

@@ -1,9 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import {
-  createGoogleFunctionsHandler,
-  createGoogleScheduledHandler,
-} from "@nosrv/adapter-google-functions";
+import { createGoogleFunctionsHandler, createGoogleScheduledHandler } from "@nosrv/google-cloud";
 import { defineApp } from "@nosrv/core";
 
 function responseRecorder() {

@@ -8,7 +8,7 @@ import {
   readForm,
   readJson,
   serializeCookie,
-} from "@nosrv/router";
+} from "@nosrv/core";
 import type { AppContext } from "@nosrv/core";
 import { defineApp, MemoryResources } from "@nosrv/core";
 

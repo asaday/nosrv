@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import test from "node:test";
 import { promisify } from "node:util";
+import { resolvePostgresPackage } from "../packages/cli/bin/targets/packages.js";
 
 const exec = promisify(execFile);
 const cli = resolve("packages/cli/bin/nosrv.js");
@@ -219,6 +220,64 @@ test("rejects Apps with host permissions for public-cloud deployment targets", a
       /Apps with host permissions can only deploy to nosrv Platform/,
     );
   } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("reports missing cloud integration packages with install guidance", async () => {
+  const directory = await fixture();
+  const cases = [
+    {
+      target: "cloudflare",
+      packageName: "@nosrv/cloudflare",
+      args: ["deploy", "--target", "cloudflare", "--dry-run"],
+    },
+    {
+      target: "google-functions",
+      packageName: "@nosrv/google-cloud",
+      args: ["deploy", "--target", "google-functions", "--region", "asia-northeast1", "--dry-run"],
+    },
+    {
+      target: "lambda",
+      packageName: "@nosrv/aws",
+      args: ["deploy", "--target", "lambda", "--dry-run"],
+    },
+    {
+      target: "azure",
+      packageName: "@nosrv/azure",
+      args: ["deploy", "--target", "azure", "--dry-run"],
+    },
+  ];
+  try {
+    for (const item of cases) {
+      await assert.rejects(
+        exec(process.execPath, [cli, ...item.args], {
+          cwd: directory,
+          env: { ...process.env, NOSRV_DISABLE_CHECKOUT_FALLBACK: "1" },
+        }),
+        new RegExp(
+          `Install it in the application with:[\\s\\S]*npm install -D ${item.packageName.replace("/", "\\/")}`,
+        ),
+        `expected install guidance for ${item.target}`,
+      );
+    }
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("reports missing PostgreSQL provider guidance", async () => {
+  const directory = await fixture();
+  const original = process.env.NOSRV_DISABLE_CHECKOUT_FALLBACK;
+  process.env.NOSRV_DISABLE_CHECKOUT_FALLBACK = "1";
+  try {
+    assert.throws(
+      () => resolvePostgresPackage(directory, "Google Functions"),
+      /npm install -D @nosrv\/postgres/,
+    );
+  } finally {
+    if (original === undefined) delete process.env.NOSRV_DISABLE_CHECKOUT_FALLBACK;
+    else process.env.NOSRV_DISABLE_CHECKOUT_FALLBACK = original;
     await rm(directory, { recursive: true, force: true });
   }
 });

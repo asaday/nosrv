@@ -223,13 +223,13 @@ The portable layer normalizes common text, number, boolean, bytes, and timestamp
 
 ## Router
 
-`@nosrv/router` is an optional Fetch API-native router. Native `Request` and `Response` remain available:
+`@nosrv/core` includes an optional Fetch API-native router. Native `Request` and `Response` remain available:
 
 See the [Router API reference](docs/router-api.md) for route matching, middleware, mounting, body readers, cookies, and automatic HTTP responses.
 
 ```ts
 import { defineApp } from "@nosrv/core";
-import { createRouter, HttpError, readJson } from "@nosrv/router";
+import { createRouter, HttpError, readJson } from "@nosrv/core";
 
 const requires = { db: true } as const;
 const router = createRouter<typeof requires>();
@@ -467,7 +467,7 @@ npx nosrv deploy --target cloudflare --temporary
 The adapter supports API Gateway HTTP API payload format 2.0 and Lambda Function URLs:
 
 ```ts
-import { createLambdaHandler } from "@nosrv/adapter-lambda";
+import { createLambdaHandler } from "@nosrv/aws";
 import app from "./app.js";
 
 export const handler = createLambdaHandler(app);
@@ -566,7 +566,7 @@ npm run deploy
 
 ## AI coding agents
 
-The canonical application contract is [`docs/ai-spec.md`](docs/ai-spec.md), with the complete runtime context documented in [`docs/context-api.md`](docs/context-api.md) and the optional routing layer in [`docs/router-api.md`](docs/router-api.md). This repository also includes:
+The canonical application contract is [`docs/ai-spec.md`](docs/ai-spec.md), with the complete runtime context documented in [`docs/context-api.md`](docs/context-api.md) and the Router API built into [`@nosrv/core`](docs/router-api.md). This repository also includes:
 
 - root [`AGENTS.md`](AGENTS.md) instructions for work on nosrv itself;
 - a repository-local `build-nosrv-app` skill under `.agents/skills`;

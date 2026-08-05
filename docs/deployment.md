@@ -19,7 +19,15 @@ For public-cloud targets, nosrv must not reimplement cloud authentication or mai
 Authenticate the provider-owned CLI before publishing:
 
 ```bash
-# Cloudflare: Wrangler is a nosrv dependency.
+# Install target support in the application first.
+npm install -D @nosrv/cloudflare
+# Or: npm install -D @nosrv/google-cloud
+# Or: npm install -D @nosrv/aws
+# Or: npm install -D @nosrv/azure
+# Add this when Google Functions, AWS Lambda, or Azure Functions use PostgreSQL.
+# npm install -D @nosrv/postgres
+
+# Cloudflare: Wrangler is installed via @nosrv/cloudflare.
 npx wrangler login
 npx wrangler whoami
 # For CI, set CLOUDFLARE_API_TOKEN instead.
@@ -87,7 +95,13 @@ Current command:
 nosrv deploy --target cloudflare
 ```
 
-Wrangler is shipped as a CLI dependency. Authenticate interactively with `npx wrangler login`, or set `CLOUDFLARE_API_TOKEN` for a non-interactive environment.
+Install `@nosrv/cloudflare` in the App so nosrv can resolve Wrangler and the Cloudflare adapter from the application root:
+
+```bash
+npm install -D @nosrv/cloudflare
+```
+
+Authenticate interactively with `npx wrangler login`, or set `CLOUDFLARE_API_TOKEN` for a non-interactive environment.
 
 Flow:
 
@@ -190,6 +204,14 @@ nosrv deploy --target google-functions
 
 The Google Cloud CLI must be installed, authenticated with `gcloud auth login`, and pointed at the intended project. The project may instead be supplied through normal `gcloud` configuration or flags.
 
+Install the target package in the App before deployment:
+
+```bash
+npm install -D @nosrv/google-cloud
+# Add when providers.google-functions.db uses PostgreSQL.
+# npm install -D @nosrv/postgres
+```
+
 Generated files:
 
 ```text
@@ -233,6 +255,14 @@ nosrv deploy --target lambda
 
 The AWS CLI must have usable credentials and the AWS SAM CLI must be installed. Verify the effective identity with `aws sts get-caller-identity`; IAM Identity Center profiles should be refreshed with `aws sso login` before deployment.
 
+Install the target package in the App before deployment:
+
+```bash
+npm install -D @nosrv/aws
+# Add when providers.lambda.db uses PostgreSQL.
+# npm install -D @nosrv/postgres
+```
+
 Generated files:
 
 ```text
@@ -266,6 +296,14 @@ deploy:
 The current implementation creates a Lambda Function URL and defaults to `AWS_IAM`. Set `http.auth: none` explicitly for public access. Lambda scheduled-handler adaptation exists, but EventBridge resource generation is not automated yet.
 
 ## Azure Functions
+
+Install the target package in the App before deployment:
+
+```bash
+npm install -D @nosrv/azure
+# Add when providers.azure.db uses PostgreSQL.
+# npm install -D @nosrv/postgres
+```
 
 Current command:
 

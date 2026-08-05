@@ -28,7 +28,9 @@ test("create produces an installable App from a source checkout", async () => {
 
     const pkg = JSON.parse(await readFile(resolve(app, "package.json"), "utf8"));
     assert.match(pkg.dependencies["@nosrv/core"], /^file:/);
-    assert.match(pkg.scripts.dev, /packages\/cli\/bin\/nosrv\.js.* dev$/);
+    assert.match(pkg.devDependencies.nosrv, /^file:/);
+    assert.equal(pkg.scripts.dev, "nosrv dev");
+    assert.equal(pkg.engines.node, ">=24");
 
     await exec("npm", ["install", "--ignore-scripts"], { cwd: app });
     await exec("npm", ["run", "dev", "--", "--help"], { cwd: app });

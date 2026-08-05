@@ -1,0 +1,43 @@
+{
+  "name": "@nosrv/google-cloud",
+  "version": "0.2.0",
+  "description": "Google Cloud Functions adapter bundle for nosrv applications",
+  "license": "Apache-2.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/asaday/nosrv.git",
+    "directory": "packages/google-cloud"
+  },
+  "homepage": "https://github.com/asaday/nosrv#readme",
+  "bugs": {
+    "url": "https://github.com/asaday/nosrv/issues"
+  },
+  "keywords": [
+    "nosrv",
+    "google-cloud",
+    "functions",
+    "serverless"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@google-cloud/firestore": "^8.6.0",
+    "@google-cloud/functions-framework": "^5.0.5",
+    "@google-cloud/storage": "^7.18.0",
+    "@nosrv/core": "0.2.0",
+    "nosrv": "0.2.0"
+  }
+}

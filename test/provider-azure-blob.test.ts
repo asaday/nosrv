@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { AzureBlobObjectStorage } from "@nosrv/provider-azure-blob";
+import { AzureBlobObjectStorage } from "@nosrv/azure";
 
 test("Azure Blob storage prefixes App keys without exposing the prefix", async () => {
   const names: string[] = [];

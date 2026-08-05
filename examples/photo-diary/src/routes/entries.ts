@@ -1,4 +1,4 @@
-import { HttpError, noContent, readForm, type Router } from "@nosrv/router";
+import { HttpError, noContent, readForm, type Router } from "@nosrv/core";
 import { findEntry, listEntries } from "../database.ts";
 
 type Requirements = { readonly db: true; readonly storage: true };

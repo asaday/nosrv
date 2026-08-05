@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { FilesystemObjectStorage, FilesystemResources } from "@nosrv/provider-filesystem";
+import { FilesystemObjectStorage, FilesystemResources } from "nosrv/runtime/filesystem";
 
 test("filesystem resources read private files without allowing traversal", async (context) => {
   const directory = await mkdtemp(join(tmpdir(), "nosrv-resources-"));

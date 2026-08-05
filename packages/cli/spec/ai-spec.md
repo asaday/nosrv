@@ -84,13 +84,13 @@ export default defineApp({
 
 ## Routing and HTTP
 
-Small applications may implement `fetch` directly. Use `@nosrv/router` when multiple routes, parameters, middleware, or body helpers improve clarity.
+Small applications may implement `fetch` directly. Use the Router API exported from `@nosrv/core` when multiple routes, parameters, middleware, or body helpers improve clarity.
 
 See the [Router API reference](./router-api.md) for the complete route, middleware, mounting, body, response, and cookie helper contracts.
 
 ```ts
 import { defineApp } from "@nosrv/core";
-import { createRouter, readJson } from "@nosrv/router";
+import { createRouter, readJson } from "@nosrv/core";
 
 const requires = { db: true } as const;
 const router = createRouter<typeof requires>();

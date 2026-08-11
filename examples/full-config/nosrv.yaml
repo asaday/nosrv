@@ -29,8 +29,6 @@ dev:
 # Use permissions: "*" only for fully trusted administration Apps.
 
 # Ask the deployment target to authenticate requests before they reach the App.
-# auth:
-#   mode: required
 
 schedules:
   - name: daily-cleanup

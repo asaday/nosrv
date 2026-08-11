@@ -145,7 +145,7 @@ return Response.json({ userId: ctx.user.id });
 ```
 
 - Do not trust identity headers supplied directly by clients.
-- Use `auth.mode: required` when the deployment target must reject anonymous requests before App dispatch.
+- Authentication and access policy are configured at the deployment target, not in `nosrv.yaml`.
 - `scheduled` handlers always receive `ctx.user === null`.
 - Authentication mechanisms, sessions, and identity verification belong to the runtime or deployment target.
 
@@ -616,10 +616,7 @@ interface ToolCallResult {
 }
 
 interface Tool {
-  (
-    tool: string,
-    arguments_?: Readonly<Record<string, unknown>>,
-  ): Promise<ToolCallResult>;
+  (tool: string, arguments_?: Readonly<Record<string, unknown>>): Promise<ToolCallResult>;
 }
 ```
 

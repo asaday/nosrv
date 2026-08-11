@@ -163,7 +163,7 @@ public/
 
 ## Portable context and capabilities
 
-`ctx.env`, `ctx.secrets`, `ctx.resources`, and `ctx.user` are always available. The runtime or deployment target decides which environment values and secrets exist; non-secret string defaults may be declared under `env` in `nosrv.yaml`, and `ctx.secrets.get(name)` returns `null` when a value is not configured. Files under the conventional `resources/` directory are packaged as immutable private resources; `ctx.resources.get(path)` returns a file as a `Blob` or `null` without publishing it as a browser asset. `ctx.user` contains a runtime-verified `User` or `null`; use `auth.mode` in `nosrv.yaml` when a deployment must reject anonymous requests. Scheduled handlers receive `ctx.user` as `null`.
+`ctx.env`, `ctx.secrets`, `ctx.resources`, and `ctx.user` are always available. The runtime or deployment target decides which environment values and secrets exist; non-secret string defaults may be declared under `env` in `nosrv.yaml`, and `ctx.secrets.get(name)` returns `null` when a value is not configured. Files under the conventional `resources/` directory are packaged as immutable private resources; `ctx.resources.get(path)` returns a file as a `Blob` or `null` without publishing it as a browser asset. `ctx.user` contains a runtime-verified `User` or `null`; authentication and access policy are configured at the deployment target. Scheduled handlers receive `ctx.user` as `null`.
 
 See the [`ctx` API reference](docs/context-api.md) for the complete context, capability methods, return types, examples, and portability boundaries.
 

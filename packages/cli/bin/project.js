@@ -43,7 +43,6 @@ export function validateConfig(config) {
       "env",
       "dev",
       "permissions",
-      "auth",
       "schedules",
       "timezone",
       "providers",
@@ -53,7 +52,6 @@ export function validateConfig(config) {
   );
   if (config.meta !== undefined) assertAllowedKeys(config.meta, ["description", "icon"], "meta");
   if (config.dev !== undefined) assertAllowedKeys(config.dev, ["port", "host"], "dev");
-  if (config.auth !== undefined) assertAllowedKeys(config.auth, ["mode"], "auth");
   if (config.schedules !== undefined) {
     if (!Array.isArray(config.schedules)) throw new Error("schedules must be an array");
     config.schedules.forEach((schedule, index) =>
@@ -269,18 +267,6 @@ export function resolveEnvironment(configuredEnvironment) {
     environment[name] = value;
   }
   return Object.keys(environment).length ? environment : undefined;
-}
-
-export function resolveAuth(configuredAuth) {
-  if (configuredAuth === undefined) return undefined;
-  if (!configuredAuth || typeof configuredAuth !== "object" || Array.isArray(configuredAuth)) {
-    throw new Error('"auth" in nosrv.yaml must be an object');
-  }
-  const mode = configuredAuth.mode;
-  if (mode !== "optional" && mode !== "required") {
-    throw new Error('"auth.mode" in nosrv.yaml must be "optional" or "required"');
-  }
-  return { mode };
 }
 
 export function resolveMeta(configuredMeta) {

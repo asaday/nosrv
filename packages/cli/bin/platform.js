@@ -365,7 +365,6 @@ function printPlatformApp(app, origin) {
   if (app.runtime?.startedAt) console.log(`Started: ${app.runtime.startedAt}`);
   if (app.configuration) {
     console.log(`Permissions: ${JSON.stringify(app.configuration.permissions ?? "portable")}`);
-    console.log(`Auth: ${app.configuration.auth}`);
     console.log(`Public assets: ${app.configuration.public ? "yes" : "no"}`);
     console.log(`Private resources: ${app.configuration.resources ? "yes" : "no"}`);
     if (app.configuration.schedules.length) {
@@ -529,7 +528,14 @@ export async function platformCommand(args, usage) {
   if (operation === "tools") {
     const action = operationArgs.find((argument) => !argument.startsWith("-"));
     if (action !== "list") throw new Error(`tools requires list\n\n${usage}`);
-    const catalog = await platformRequest(connection, "/_platform/tools");
+    const catalog = await platformRequest(connection, "/_platform/tools", {
+      signal: AbortSignal.timeout(30_000),
+    }).catch((error) => {
+      if (error?.name === "TimeoutError") {
+        throw new Error("Platform tool catalog request timed out after 30 seconds");
+      }
+      throw error;
+    });
     if (jsonOutput) {
       writePlatformResult(catalog, true);
       return;

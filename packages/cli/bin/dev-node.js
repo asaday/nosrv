@@ -201,14 +201,26 @@ export async function dev(args, options = {}) {
   }
 
   const configuredEnvironment = resolveEnvironment(config.env);
-  const bindingsConfiguration = process.env.NOSRV_PLATFORM_BINDINGS_JSON
-    ? JSON.parse(process.env.NOSRV_PLATFORM_BINDINGS_JSON)
+  const toolsConfiguration = process.env.NOSRV_PLATFORM_TOOLS_JSON
+    ? JSON.parse(process.env.NOSRV_PLATFORM_TOOLS_JSON)
     : {};
-  const bindings = {};
-  if (Object.keys(bindingsConfiguration).length) {
+  const tools = {};
+  const requiredTools = app.requires?.tools ?? [];
+  if (
+    !Array.isArray(requiredTools) ||
+    requiredTools.some((name) => typeof name !== "string" || !name)
+  ) {
+    throw new Error("requires.tools must be an array of non-empty tool names");
+  }
+  if (new Set(requiredTools).size !== requiredTools.length) {
+    throw new Error("requires.tools contains duplicates");
+  }
+  if (requiredTools.length) {
     const { createMcpBinding } = await import("nosrv/runtime/mcp");
-    for (const [name, binding] of Object.entries(bindingsConfiguration)) {
-      bindings[name] = createMcpBinding(binding);
+    for (const name of requiredTools) {
+      const configured = toolsConfiguration[name];
+      if (!configured) throw new Error(`Required tool is unavailable: ${name}`);
+      tools[name] = createMcpBinding(configured);
     }
   }
   const runtimeOptions = {
@@ -232,7 +244,7 @@ export async function dev(args, options = {}) {
       ...(databaseUrlEnv ? [databaseUrlEnv] : []),
       ...(process.env.NOSRV_IDENTITY_SECRET ? ["NOSRV_IDENTITY_SECRET"] : []),
       ...(process.env.NOSRV_APP_SECRETS_JSON ? ["NOSRV_APP_SECRETS_JSON"] : []),
-      ...(process.env.NOSRV_PLATFORM_BINDINGS_JSON ? ["NOSRV_PLATFORM_BINDINGS_JSON"] : []),
+      ...(process.env.NOSRV_PLATFORM_TOOLS_JSON ? ["NOSRV_PLATFORM_TOOLS_JSON"] : []),
     ],
     ...(process.env.NOSRV_APP_SECRETS_JSON
       ? {
@@ -244,7 +256,7 @@ export async function dev(args, options = {}) {
     ...(kv ? { kv } : {}),
     ...(storage ? { storage } : {}),
     ...(db ? { db } : {}),
-    bindings,
+    tools,
     ...(resourcesDirectory
       ? {
           resources: new (await import("nosrv/runtime/filesystem")).FilesystemResources(

@@ -7,7 +7,7 @@ import {
   EnvironmentSecrets,
   publicEnvironment,
   type AppContext,
-  type Binding,
+  type Tool,
   type Database,
   type KV,
   type Logger,
@@ -38,7 +38,7 @@ export interface NodeRuntimeOptions {
   assetsSpaFallback?: boolean;
   secrets?: Secrets;
   resolveUser?: (request: Request) => User | null | Promise<User | null>;
-  bindings?: Readonly<Record<string, Binding>>;
+  tools?: Readonly<Record<string, Tool>>;
 }
 
 const consoleLogger: Logger = {
@@ -133,7 +133,7 @@ async function appContext(
     ...(resources.db ? { db: resources.db } : {}),
     secrets: resources.secrets,
     resources: resources.resources,
-    tools: Object.freeze({ ...(options.bindings ?? {}) }),
+    tools: Object.freeze({ ...(options.tools ?? {}) }),
     user: request ? ((await options.resolveUser?.(request)) ?? null) : null,
   };
   validateCapabilities(app, context);

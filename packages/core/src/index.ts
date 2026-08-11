@@ -423,22 +423,22 @@ export interface User {
   thumbnail?: string;
 }
 
-export interface BindingCallResult {
+export interface ToolCallResult {
   content: unknown[];
   structuredContent?: unknown;
   isError?: boolean;
 }
 
 /** A Platform-managed external capability, such as an MCP server. */
-export interface Binding {
-  (tool: string, arguments_?: Readonly<Record<string, unknown>>): Promise<BindingCallResult>;
+export interface Tool {
+  (tool: string, arguments_?: Readonly<Record<string, unknown>>): Promise<ToolCallResult>;
 }
 
 export interface CapabilityRequirements {
   db?: boolean;
   kv?: boolean;
   storage?: boolean;
-  bindings?: readonly string[];
+  tools?: readonly string[];
 }
 
 export interface AppContext {
@@ -449,7 +449,7 @@ export interface AppContext {
   kv?: KV;
   storage?: ObjectStorage;
   db?: Database;
-  tools: Readonly<Record<string, Binding>>;
+  tools: Readonly<Record<string, Tool>>;
   secrets: Secrets;
   resources: Resources;
   user: User | null;
@@ -462,9 +462,9 @@ type RequiredContext<R extends CapabilityRequirements> = Omit<
   (R["kv"] extends true ? { kv: KV } : {}) &
   (R["storage"] extends true ? { storage: ObjectStorage } : {}) &
   (R["db"] extends true ? { db: Database } : {}) &
-  (R["bindings"] extends readonly (infer N extends string)[]
-    ? { tools: Readonly<Record<N, Binding>> }
-    : { tools: Readonly<Record<string, Binding>> });
+  (R["tools"] extends readonly (infer N extends string)[]
+    ? { tools: Readonly<Record<N, Tool>> }
+    : { tools: Readonly<Record<string, Tool>> });
 
 export type AppContextFor<R extends CapabilityRequirements> = RequiredContext<R>;
 
@@ -517,8 +517,8 @@ export function validateCapabilities(app: NosrvApp, context: AppContext): void {
   if (app.requires?.storage && !context.storage)
     throw new Error("Required capability is unavailable: storage");
   if (app.requires?.db && !context.db) throw new Error("Required capability is unavailable: db");
-  for (const name of app.requires?.bindings ?? []) {
-    if (!context.tools[name]) throw new Error(`Required binding is unavailable: ${name}`);
+  for (const name of app.requires?.tools ?? []) {
+    if (!context.tools[name]) throw new Error(`Required tool is unavailable: ${name}`);
   }
 }
 

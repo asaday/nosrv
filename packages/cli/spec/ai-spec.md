@@ -44,24 +44,18 @@ export default defineApp({
 
 Available declared portable capabilities are `kv`, `storage`, and `db`. Read-only packaged resources are always available through `ctx.resources`, like `ctx.env`, `ctx.secrets`, and `ctx.user`.
 
-Platform-managed integrations are declared by name in both the App and `nosrv.yaml`:
+Platform-managed integrations are declared by logical name in App code:
 
 ```ts
 export default defineApp({
-  requires: { bindings: ["drive"] },
+  requires: { tools: ["drive"] },
   async fetch(_request, ctx) {
     return Response.json(await ctx.tools.drive("search_files", { query: "report" }));
   },
 });
 ```
 
-```yaml
-bindings:
-  drive:
-    tools: [search_files]
-```
-
-The Platform resolves the logical Binding name to its provider, connection, and credentials. Binding names must match a capability offered by the target Platform, and calls are limited to the declared tools. MCP is currently a self-hosted Platform and Node runtime capability.
+The Platform resolves the logical tool group name to its provider, connection, credentials, and permitted operations. Tool group names must match a capability offered by the target Platform. MCP is currently a self-hosted Platform and Node runtime capability. Do not repeat tool declarations in `nosrv.yaml`; that file is reserved for deployment metadata that cannot be expressed by the App definition.
 
 See the [`ctx` API reference](./context-api.md) for the complete method signatures, return types, examples, and portability boundaries.
 

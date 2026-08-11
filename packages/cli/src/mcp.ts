@@ -1,4 +1,4 @@
-import type { Binding, BindingCallResult } from "@nosrv/core";
+import type { Tool, ToolCallResult } from "@nosrv/core";
 
 export interface McpBindingOptions {
   url: string;
@@ -86,11 +86,11 @@ export class McpBinding {
   async call(
     tool: string,
     arguments_: Readonly<Record<string, unknown>> = {},
-  ): Promise<BindingCallResult> {
+  ): Promise<ToolCallResult> {
     if (!this.#options.tools.includes(tool)) throw new Error(`MCP tool is not allowed: ${tool}`);
     await this.#initialize();
     const result = (await this.#rpc("tools/call", { name: tool, arguments: arguments_ })) as
-      BindingCallResult | undefined;
+      ToolCallResult | undefined;
     if (!result || !Array.isArray(result.content)) throw new Error("Invalid MCP tools/call result");
     return result;
   }
@@ -114,7 +114,7 @@ export class McpBinding {
   }
 }
 
-export function createMcpBinding(options: McpBindingOptions): Binding {
+export function createMcpBinding(options: McpBindingOptions): Tool {
   const client = new McpBinding(options);
   return (tool, arguments_) => client.call(tool, arguments_);
 }

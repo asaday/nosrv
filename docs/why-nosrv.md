@@ -22,7 +22,7 @@ A nosrv App concentrates on its own behavior:
 
 ```ts
 export default defineApp({
-  requires: { db: true, bindings: ["slack"] },
+  requires: { db: true, tools: ["slack"] },
 
   async fetch(request, ctx) {
     const query = new URL(request.url).searchParams.get("q") ?? "";
@@ -35,22 +35,13 @@ export default defineApp({
 
 The App asks for a database and a logical Slack capability. It does not select the Platform database backend, embed the Slack connection URL, or define organization-wide tool policy.
 
-The App declares only the integration tools it needs:
-
-```yaml
-bindings:
-  slack:
-    tools:
-      - search_messages
-```
-
-The Platform operator separately decides how that logical Binding is implemented, authenticated, and constrained.
+The App declares the logical integration it needs through `requires.tools`. The Platform operator separately decides how that tool group is implemented, authenticated, and constrained. `nosrv.yaml` stays focused on deployment metadata that cannot be expressed in code.
 
 ## One problem, three outcomes
 
 ### Build
 
-The independent nosrv App specification gives people, Studio, and external coding agents the same small target. Apps use Web Standard `Request` and `Response`, optional scheduled work, and explicit capabilities for database, KV, storage, and Platform Bindings.
+The independent nosrv App specification gives people, Studio, and external coding agents the same small target. Apps use Web Standard `Request` and `Response`, optional scheduled work, and explicit capabilities for database, KV, storage, and Platform tools.
 
 Studio is the reference browser experience for creating, validating, previewing, and deploying these Apps. It is optional and does not define a Studio-only App format.
 
@@ -91,7 +82,7 @@ Complete portability is not the goal. Dependencies should be explicit and unnece
 
 - `Request`, `Response`, and the basic App contract form the portable core.
 - Database, KV, and storage use common capability contracts with documented provider differences.
-- A logical Binding such as `slack` is available only on Platforms that provide it.
+- A logical tool group such as `slack` is available only on Platforms that provide it.
 - Provider selection, connection URLs, credentials, and organization policy remain Platform responsibilities.
 - Apps that need stronger isolation, independent scaling, long-running jobs, or specialized infrastructure can move to a more suitable execution environment.
 

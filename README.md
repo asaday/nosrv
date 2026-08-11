@@ -6,7 +6,7 @@ AI makes application code inexpensive to create. It does not make each App's run
 
 nosrv lets a person or AI write what makes an App unique while a receiving Platform provides the surroundings shared by every App:
 
-- **Build:** use a small, independent App contract with HTTP, schedules, data capabilities, and optional Platform Bindings.
+- **Build:** use a small, independent App contract with HTTP, schedules, data capabilities, and optional Platform tools.
 - **Protect:** keep identity, secrets, resource providers, integration policy, and deployment authority outside App-specific implementations.
 - **Operate:** register, inspect, update, stop, roll back, and remove Apps through one lifecycle instead of inventing one per App.
 
@@ -106,7 +106,7 @@ Do not use it when:
 | Object storage       | Filesystem           | Filesystem per app or shared S3/GCS | R2                    | S3                             | GCS                 | Blob Storage             |
 | Secrets              | Environment / `.env` | Encrypted per-App or shared secrets | Wrangler bindings     | Environment                    | Environment         | App settings / Key Vault |
 | Verified user hook   | Resolver             | Local/OIDC session                  | Resolver              | API Gateway claims or resolver | Resolver            | Adapter resolver         |
-| External Bindings    | —                    | Logical Platform Bindings           | —                     | —                              | —                   | —                        |
+| External tools       | —                    | Logical Platform tools              | —                     | —                              | —                   | —                        |
 | CLI development      | ✅                   | Docker or local Node                | ✅                    | HTTP API v2 emulator           | Functions Framework | —                        |
 | Automated deployment | —                    | ✅ authenticated upload             | ✅ Wrangler           | ✅ AWS SAM                     | ✅ gcloud           | ✅ Functions Core Tools  |
 

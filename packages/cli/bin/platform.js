@@ -526,21 +526,21 @@ export async function platformCommand(args, usage) {
   const connection = await platformConnection(config, rawOperationArgs);
   const jsonOutput = operationArgs.includes("--json");
 
-  if (operation === "bindings") {
+  if (operation === "tools") {
     const action = operationArgs.find((argument) => !argument.startsWith("-"));
-    if (action !== "list") throw new Error(`bindings requires list\n\n${usage}`);
-    const catalog = await platformRequest(connection, "/_platform/bindings");
+    if (action !== "list") throw new Error(`tools requires list\n\n${usage}`);
+    const catalog = await platformRequest(connection, "/_platform/tools");
     if (jsonOutput) {
       writePlatformResult(catalog, true);
       return;
     }
-    if (!catalog.bindings.length) {
-      console.log("No Platform bindings.");
+    if (!catalog.tools.length) {
+      console.log("No Platform tools.");
       return;
     }
-    for (const binding of catalog.bindings) {
-      console.log(`${binding.name}${binding.available ? "" : " (unavailable)"}`);
-      for (const tool of binding.tools) {
+    for (const group of catalog.tools) {
+      console.log(`${group.name}${group.available ? "" : " (unavailable)"}`);
+      for (const tool of group.tools) {
         console.log(`  ${tool.name}${tool.description ? ` - ${tool.description}` : ""}`);
       }
     }

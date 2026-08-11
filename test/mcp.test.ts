@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import test from "node:test";
-import { McpBinding } from "nosrv/runtime/mcp";
+import { createMcpBinding, McpBinding } from "nosrv/runtime/mcp";
 
 test("MCP bindings initialize, call allowed tools, and preserve sessions", async () => {
   const methods: string[] = [];
@@ -38,11 +38,14 @@ test("MCP bindings initialize, call allowed tools, and preserve sessions", async
   const address = server.address();
   assert(address && typeof address === "object");
   try {
-    const binding = new McpBinding({ url: `http://127.0.0.1:${address.port}`, tools: ["search"] });
-    const result = await binding.call("search", { query: "report" });
+    const binding = createMcpBinding({
+      url: `http://127.0.0.1:${address.port}`,
+      tools: ["search"],
+    });
+    const result = await binding("search", { query: "report" });
     assert.deepEqual(result.content, [{ type: "text", text: "report" }]);
     assert.deepEqual(methods, ["initialize", "notifications/initialized", "tools/call"]);
-    await assert.rejects(binding.call("delete", {}), /not allowed/);
+    await assert.rejects(binding("delete", {}), /not allowed/);
   } finally {
     await new Promise<void>((resolve, reject) =>
       server.close((error) => (error ? reject(error) : resolve())),

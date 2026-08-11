@@ -26,7 +26,7 @@ export default defineApp({
 
   async fetch(request, ctx) {
     const query = new URL(request.url).searchParams.get("q") ?? "";
-    const messages = await ctx.bindings.slack.call("search_messages", { query });
+    const messages = await ctx.tools.slack("search_messages", { query });
     await ctx.db.insert("searches", { query, createdAt: new Date() });
     return Response.json(messages);
   },

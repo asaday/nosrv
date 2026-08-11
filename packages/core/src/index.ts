@@ -431,7 +431,7 @@ export interface BindingCallResult {
 
 /** A Platform-managed external capability, such as an MCP server. */
 export interface Binding {
-  call(tool: string, arguments_?: Readonly<Record<string, unknown>>): Promise<BindingCallResult>;
+  (tool: string, arguments_?: Readonly<Record<string, unknown>>): Promise<BindingCallResult>;
 }
 
 export interface CapabilityRequirements {
@@ -449,7 +449,7 @@ export interface AppContext {
   kv?: KV;
   storage?: ObjectStorage;
   db?: Database;
-  bindings: Readonly<Record<string, Binding>>;
+  tools: Readonly<Record<string, Binding>>;
   secrets: Secrets;
   resources: Resources;
   user: User | null;
@@ -457,14 +457,14 @@ export interface AppContext {
 
 type RequiredContext<R extends CapabilityRequirements> = Omit<
   AppContext,
-  "kv" | "storage" | "db" | "bindings"
+  "kv" | "storage" | "db" | "tools"
 > &
   (R["kv"] extends true ? { kv: KV } : {}) &
   (R["storage"] extends true ? { storage: ObjectStorage } : {}) &
   (R["db"] extends true ? { db: Database } : {}) &
   (R["bindings"] extends readonly (infer N extends string)[]
-    ? { bindings: Readonly<Record<N, Binding>> }
-    : { bindings: Readonly<Record<string, Binding>> });
+    ? { tools: Readonly<Record<N, Binding>> }
+    : { tools: Readonly<Record<string, Binding>> });
 
 export type AppContextFor<R extends CapabilityRequirements> = RequiredContext<R>;
 
@@ -518,7 +518,7 @@ export function validateCapabilities(app: NosrvApp, context: AppContext): void {
     throw new Error("Required capability is unavailable: storage");
   if (app.requires?.db && !context.db) throw new Error("Required capability is unavailable: db");
   for (const name of app.requires?.bindings ?? []) {
-    if (!context.bindings[name]) throw new Error(`Required binding is unavailable: ${name}`);
+    if (!context.tools[name]) throw new Error(`Required binding is unavailable: ${name}`);
   }
 }
 

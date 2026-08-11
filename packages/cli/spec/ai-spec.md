@@ -50,7 +50,7 @@ Platform-managed integrations are declared by name in both the App and `nosrv.ya
 export default defineApp({
   requires: { bindings: ["drive"] },
   async fetch(_request, ctx) {
-    return Response.json(await ctx.bindings.drive.call("search_files", { query: "report" }));
+    return Response.json(await ctx.tools.drive("search_files", { query: "report" }));
   },
 });
 ```

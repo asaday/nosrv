@@ -13,7 +13,7 @@ export interface McpToolDefinition {
   inputSchema: Readonly<Record<string, unknown>>;
 }
 
-export class McpBinding implements Binding {
+export class McpBinding {
   readonly #options: McpBindingOptions;
   #sessionId?: string;
   #initialized?: Promise<void>;
@@ -112,6 +112,11 @@ export class McpBinding implements Binding {
     } while (cursor);
     return tools;
   }
+}
+
+export function createMcpBinding(options: McpBindingOptions): Binding {
+  const client = new McpBinding(options);
+  return (tool, arguments_) => client.call(tool, arguments_);
 }
 
 function mcpToolDefinition(value: unknown): McpToolDefinition {

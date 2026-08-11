@@ -125,7 +125,7 @@ async function createContext(
     ...(isD1Database(d1) ? { db: new D1Database(d1) } : {}),
     secrets: new EnvironmentSecrets(allEnvironment),
     resources: options.resources ?? new MemoryResources(),
-    bindings: Object.freeze({}),
+    tools: Object.freeze({}),
     user: request ? ((await options.resolveUser?.(request, env)) ?? null) : null,
   };
   validateCapabilities(app, context);

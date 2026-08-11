@@ -126,7 +126,7 @@ async function appContext(
     ...(options.db ? { db: options.db } : {}),
     secrets: new EnvironmentSecrets(values),
     resources: options.resources ?? new MemoryResources(),
-    bindings: Object.freeze({}),
+    tools: Object.freeze({}),
     user: request ? ((await options.resolveUser?.(request, invocation)) ?? null) : null,
   };
 }

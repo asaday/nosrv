@@ -206,9 +206,9 @@ export async function dev(args, options = {}) {
     : {};
   const bindings = {};
   if (Object.keys(bindingsConfiguration).length) {
-    const { McpBinding } = await import("nosrv/runtime/mcp");
+    const { createMcpBinding } = await import("nosrv/runtime/mcp");
     for (const [name, binding] of Object.entries(bindingsConfiguration)) {
-      bindings[name] = new McpBinding(binding);
+      bindings[name] = createMcpBinding(binding);
     }
   }
   const runtimeOptions = {

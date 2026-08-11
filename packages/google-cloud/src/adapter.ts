@@ -113,7 +113,7 @@ export function createGoogleFunctionsHandler(
         ...(options.db ? { db: options.db } : {}),
         secrets: new EnvironmentSecrets(allEnvironment),
         resources: options.resources ?? new MemoryResources(),
-        bindings: Object.freeze({}),
+        tools: Object.freeze({}),
         user: (await options.resolveUser?.(request)) ?? null,
       };
       validateCapabilities(app, context);
@@ -179,7 +179,7 @@ export function createGoogleScheduledHandler(
         ...(options.db ? { db: options.db } : {}),
         secrets: new EnvironmentSecrets(allEnvironment),
         resources: options.resources ?? new MemoryResources(),
-        bindings: Object.freeze({}),
+        tools: Object.freeze({}),
         user: null,
       };
       validateCapabilities(app, context);

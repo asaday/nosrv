@@ -32,6 +32,7 @@ Usage:
   nosrv login [--url <platform-url>] [--header <name:value>...]
   nosrv whoami
   nosrv logout
+  nosrv bindings list [--json]
   nosrv link <platform-path>
   nosrv list [--json]
   nosrv info [name-or-id] [--json]
@@ -243,6 +244,7 @@ async function main() {
   if (
     [
       "link",
+      "bindings",
       "list",
       "info",
       "start",

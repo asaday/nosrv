@@ -133,7 +133,7 @@ async function appContext(
     ...(resources.db ? { db: resources.db } : {}),
     secrets: resources.secrets,
     resources: resources.resources,
-    bindings: Object.freeze({ ...(options.bindings ?? {}) }),
+    tools: Object.freeze({ ...(options.bindings ?? {}) }),
     user: request ? ((await options.resolveUser?.(request)) ?? null) : null,
   };
   validateCapabilities(app, context);

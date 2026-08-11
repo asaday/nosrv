@@ -526,6 +526,27 @@ export async function platformCommand(args, usage) {
   const connection = await platformConnection(config, rawOperationArgs);
   const jsonOutput = operationArgs.includes("--json");
 
+  if (operation === "bindings") {
+    const action = operationArgs.find((argument) => !argument.startsWith("-"));
+    if (action !== "list") throw new Error(`bindings requires list\n\n${usage}`);
+    const catalog = await platformRequest(connection, "/_platform/bindings");
+    if (jsonOutput) {
+      writePlatformResult(catalog, true);
+      return;
+    }
+    if (!catalog.bindings.length) {
+      console.log("No Platform bindings.");
+      return;
+    }
+    for (const binding of catalog.bindings) {
+      console.log(`${binding.name}${binding.available ? "" : " (unavailable)"}`);
+      for (const tool of binding.tools) {
+        console.log(`  ${tool.name}${tool.description ? ` - ${tool.description}` : ""}`);
+      }
+    }
+    return;
+  }
+
   if (operation === "link") {
     const path = operationArgs[0];
     if (!path || path.startsWith("-"))

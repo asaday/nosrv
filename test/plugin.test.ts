@@ -45,6 +45,8 @@ test("ships a self-contained Agent Plugin for building nosrv Apps", async () => 
     "host permissions",
     "structured `ctx.db` CRUD",
     "Do not generate raw SQL",
+    "nosrv bindings list --json",
+    "ctx.tools.<binding>",
   ]) {
     assert.ok(skill.includes(required), `skill should explain ${required}`);
   }

@@ -1,13 +1,29 @@
 # Deployment Design
 
-nosrv generates portable application entrypoints and platform configuration. Public-cloud targets delegate authentication, infrastructure changes, uploads, and deployment state to each platform's official CLI. The self-hosted nosrv Platform accepts Artifacts directly and maintains its own application and version state.
+nosrv Apps have two first-class deployment paths:
+
+- **nosrv Platform** is the default target for a self-hosted, managed collection of Apps. It accepts nosrv Artifacts directly and owns routing, process supervision, versions, rollback, logs, secrets, schedules, identity, and Platform-provided tools.
+- **Public FaaS targets** adapt the same App contract to Cloudflare Workers, Google Functions, AWS Lambda, or Azure Functions. nosrv generates the entrypoint and target configuration, then delegates authentication, infrastructure changes, uploads, and deployment state to the provider's official CLI.
+
+```bash
+# Default: deploy to the current or local nosrv Platform.
+nosrv deploy
+
+# Explicit public-cloud targets.
+nosrv deploy --target cloudflare
+nosrv deploy --target google-functions
+nosrv deploy --target lambda
+nosrv deploy --target azure
+```
+
+The Platform is an additional execution environment for the independent nosrv App specification, not a requirement for using nosrv. Public-cloud adapters do not provide the Platform control plane, and Platform-only capabilities such as named `ctx.tools` groups require a Platform that supplies them.
 
 ## Delegation boundary
 
-| Target             | nosrv owns                                                                            | Official CLI owns                                                                     | Status               |
-| ------------------ | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | -------------------- |
-| Cloudflare Workers | Worker entrypoint, Wrangler config, asset and capability bindings                     | Authentication, build/upload, resource resolution, deployment                         | Implemented          |
+| Target             | nosrv CLI generates or owns                                                           | Target runtime, operator, or official CLI owns                                         | Status               |
+| ------------------ | ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | -------------------- |
 | nosrv Platform     | Deterministic Artifact, authenticated upload, digest verification, version activation | Self-hosted routing and process supervision                                           | Implemented MVP      |
+| Cloudflare Workers | Worker entrypoint, Wrangler config, asset and capability bindings                     | Authentication, build/upload, resource resolution, deployment                         | Implemented          |
 | Google Functions   | Staging bundle, HTTP entrypoint, packaged assets, command arguments                   | Authentication, project selection, build/upload, function create/update               | Implemented for HTTP |
 | AWS Lambda         | Staging bundle, handler, assets, SAM template                                         | Authentication, artifact build/upload, CloudFormation, IAM and resource create/update | Implemented for HTTP |
 | Azure Functions    | Node.js v4 staging bundle, HTTP and Timer registration, packaged assets               | Authentication, Function App provisioning, build/upload, environment, deployment      | Implemented          |
@@ -16,7 +32,9 @@ For public-cloud targets, nosrv must not reimplement cloud authentication or mai
 
 ## Authentication prerequisites
 
-Authenticate the provider-owned CLI before publishing:
+For nosrv Platform, `nosrv deploy` uses the current login and starts browser-based login when an interactive deployment has no saved token. Run `nosrv login --url https://nosrv.example` explicitly when selecting or switching Platforms. The detailed Platform flow is described below.
+
+For a public-cloud target, authenticate the provider-owned CLI before publishing:
 
 ```bash
 # Install target support in the application first.
@@ -65,6 +83,7 @@ PostgreSQL, Redis, and S3 or GCS storage instead.
 
 | Target           | Before deploying capability-backed code                                                                                                                                                                              |
 | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| nosrv Platform   | Select Platform-wide providers. The one-node development profile supplies SQLite database and KV plus filesystem storage; replicated installations require operator-provided PostgreSQL, Redis, and S3 or GCS. Configure named external tools and their policy on the Platform. |
 | Cloudflare       | Create/select the Workers KV namespace, R2 bucket, or D1 database; place the required name or ID in `providers.cloudflare`; configure Wrangler secrets separately.                                                   |
 | Google Functions | Create/select the Firestore database and GCS bucket, or a reachable PostgreSQL database; grant the required roles/network access; configure runtime environment values or Secret Manager mappings separately.        |
 | AWS Lambda       | Create/select the DynamoDB table and S3 bucket, or a reachable PostgreSQL database; add least-privilege permissions/network access; configure runtime environment values or Secrets Manager integration separately.  |

@@ -23,6 +23,10 @@
       "types": "./dist/memory.d.ts",
       "import": "./dist/memory.js"
     },
+    "./runtime/mcp": {
+      "types": "./dist/mcp.d.ts",
+      "import": "./dist/mcp.js"
+    },
     "./runtime/node": {
       "types": "./dist/runtime-node.d.ts",
       "import": "./dist/runtime-node.js"

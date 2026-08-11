@@ -423,10 +423,22 @@ export interface User {
   thumbnail?: string;
 }
 
+export interface BindingCallResult {
+  content: unknown[];
+  structuredContent?: unknown;
+  isError?: boolean;
+}
+
+/** A Platform-managed external capability, such as an MCP server. */
+export interface Binding {
+  call(tool: string, arguments_?: Readonly<Record<string, unknown>>): Promise<BindingCallResult>;
+}
+
 export interface CapabilityRequirements {
   db?: boolean;
   kv?: boolean;
   storage?: boolean;
+  bindings?: readonly string[];
 }
 
 export interface AppContext {
@@ -437,15 +449,22 @@ export interface AppContext {
   kv?: KV;
   storage?: ObjectStorage;
   db?: Database;
+  bindings: Readonly<Record<string, Binding>>;
   secrets: Secrets;
   resources: Resources;
   user: User | null;
 }
 
-type RequiredContext<R extends CapabilityRequirements> = Omit<AppContext, "kv" | "storage" | "db"> &
+type RequiredContext<R extends CapabilityRequirements> = Omit<
+  AppContext,
+  "kv" | "storage" | "db" | "bindings"
+> &
   (R["kv"] extends true ? { kv: KV } : {}) &
   (R["storage"] extends true ? { storage: ObjectStorage } : {}) &
-  (R["db"] extends true ? { db: Database } : {});
+  (R["db"] extends true ? { db: Database } : {}) &
+  (R["bindings"] extends readonly (infer N extends string)[]
+    ? { bindings: Readonly<Record<N, Binding>> }
+    : { bindings: Readonly<Record<string, Binding>> });
 
 export type AppContextFor<R extends CapabilityRequirements> = RequiredContext<R>;
 
@@ -498,6 +517,9 @@ export function validateCapabilities(app: NosrvApp, context: AppContext): void {
   if (app.requires?.storage && !context.storage)
     throw new Error("Required capability is unavailable: storage");
   if (app.requires?.db && !context.db) throw new Error("Required capability is unavailable: db");
+  for (const name of app.requires?.bindings ?? []) {
+    if (!context.bindings[name]) throw new Error(`Required binding is unavailable: ${name}`);
+  }
 }
 
 export * from "./router.js";

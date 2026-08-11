@@ -46,6 +46,7 @@ function validateConfigKeys(config) {
       "auth",
       "schedules",
       "timezone",
+      "bindings",
       "providers",
       "deploy",
     ],
@@ -60,6 +61,7 @@ function validateConfigKeys(config) {
       assertAllowedKeys(schedule, ["name", "cron"], `schedules[${index}]`),
     );
   }
+  resolveBindings(config.bindings);
   if (config.providers !== undefined) {
     const providers = assertAllowedKeys(
       config.providers,
@@ -269,6 +271,28 @@ export function resolveEnvironment(configuredEnvironment) {
     environment[name] = value;
   }
   return Object.keys(environment).length ? environment : undefined;
+}
+
+export function resolveBindings(value) {
+  if (value === undefined) return undefined;
+  const bindings = assertAllowedKeys(value, Object.keys(value ?? {}), "bindings");
+  const result = {};
+  for (const [name, configured] of Object.entries(bindings)) {
+    if (!/^[a-z][a-z0-9_-]{0,62}$/.test(name)) throw new Error(`Invalid binding name: ${name}`);
+    const binding = assertAllowedKeys(configured, ["tools"], `bindings.${name}`);
+    if (
+      !Array.isArray(binding.tools) ||
+      !binding.tools.length ||
+      binding.tools.some((tool) => typeof tool !== "string" || !tool)
+    ) {
+      throw new Error(`bindings.${name}.tools must be a non-empty string array`);
+    }
+    if (new Set(binding.tools).size !== binding.tools.length) {
+      throw new Error(`bindings.${name}.tools contains duplicates`);
+    }
+    result[name] = { tools: binding.tools };
+  }
+  return Object.keys(result).length ? result : undefined;
 }
 
 export function resolveAuth(configuredAuth) {

@@ -176,6 +176,7 @@ export function createLambdaHandler(
         ...(options.db ? { db: options.db } : {}),
         secrets: new EnvironmentSecrets(allEnvironment),
         resources: options.resources ?? new MemoryResources(),
+        bindings: Object.freeze({}),
         user,
       };
       validateCapabilities(app, appContext);
@@ -230,6 +231,7 @@ export function createLambdaScheduledHandler(
       ...(options.db ? { db: options.db } : {}),
       secrets: new EnvironmentSecrets(allEnvironment),
       resources: options.resources ?? new MemoryResources(),
+      bindings: Object.freeze({}),
       user: null,
     };
     validateCapabilities(app, context);

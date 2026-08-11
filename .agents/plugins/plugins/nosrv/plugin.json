@@ -1,0 +1,12 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "nosrv",
+  "version": "0.1.0",
+  "description": "Evaluate, build, and operate portable nosrv applications.",
+  "author": {
+    "name": "nosrv contributors"
+  },
+  "repository": "https://github.com/asaday/nosrv",
+  "license": "Apache-2.0",
+  "keywords": ["nosrv", "faas", "typescript", "web-app"]
+}

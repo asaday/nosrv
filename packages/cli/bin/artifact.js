@@ -8,6 +8,7 @@ import {
   loadConfig,
   resolveApp,
   resolveAuth,
+  resolveBindings,
   resolveEnvironment,
   resolveMeta,
   resolvePermissions,
@@ -105,6 +106,7 @@ export async function buildArtifact(args, options = {}) {
   const config = await loadConfig(cwd);
   const permissions = resolvePermissions(config.permissions);
   const configuredEnvironment = resolveEnvironment(config.env);
+  const bindings = resolveBindings(config.bindings);
   const auth = resolveAuth(config.auth);
   const meta = resolveMeta(config.meta);
   const route = config.route;
@@ -166,6 +168,7 @@ export async function buildArtifact(args, options = {}) {
       ...(permissions ? { permissions } : {}),
       ...(configuredEnvironment ? { env: configuredEnvironment } : {}),
       ...(auth ? { auth } : {}),
+      ...(bindings ? { bindings } : {}),
     };
     await writeFile(resolve(temp, "nosrv.yaml"), stringify(artifactConfig), "utf8");
     const digest = await artifactDigest(temp);

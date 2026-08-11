@@ -24,6 +24,7 @@ const context: AppContext = {
   user: null,
   waitUntil() {},
   resources: new MemoryResources(),
+  bindings: Object.freeze({}),
 };
 
 test("router matches methods and decoded path params", async () => {

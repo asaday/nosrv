@@ -201,6 +201,16 @@ export async function dev(args, options = {}) {
   }
 
   const configuredEnvironment = resolveEnvironment(config.env);
+  const bindingsConfiguration = process.env.NOSRV_PLATFORM_BINDINGS_JSON
+    ? JSON.parse(process.env.NOSRV_PLATFORM_BINDINGS_JSON)
+    : {};
+  const bindings = {};
+  if (Object.keys(bindingsConfiguration).length) {
+    const { McpBinding } = await import("nosrv/runtime/mcp");
+    for (const [name, binding] of Object.entries(bindingsConfiguration)) {
+      bindings[name] = new McpBinding(binding);
+    }
+  }
   const runtimeOptions = {
     hostname,
     port,
@@ -222,6 +232,7 @@ export async function dev(args, options = {}) {
       ...(databaseUrlEnv ? [databaseUrlEnv] : []),
       ...(process.env.NOSRV_IDENTITY_SECRET ? ["NOSRV_IDENTITY_SECRET"] : []),
       ...(process.env.NOSRV_APP_SECRETS_JSON ? ["NOSRV_APP_SECRETS_JSON"] : []),
+      ...(process.env.NOSRV_PLATFORM_BINDINGS_JSON ? ["NOSRV_PLATFORM_BINDINGS_JSON"] : []),
     ],
     ...(process.env.NOSRV_APP_SECRETS_JSON
       ? {
@@ -233,6 +244,7 @@ export async function dev(args, options = {}) {
     ...(kv ? { kv } : {}),
     ...(storage ? { storage } : {}),
     ...(db ? { db } : {}),
+    bindings,
     ...(resourcesDirectory
       ? {
           resources: new (await import("nosrv/runtime/filesystem")).FilesystemResources(

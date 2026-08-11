@@ -1,77 +1,39 @@
 # nosrv
 
-**Small Apps should not become separate operations.**
+**Build small Apps without creating separate operations.**
 
-A small Web App can be easy to build and easy to run. Operating it still requires decisions about its route, process, persistent data, secrets, identity, permissions, logs, updates, rollback, and eventual removal. None of these decisions is difficult on its own.
+AI makes application code inexpensive to create. It does not make each App's runtime, persistent data, secrets, identity, integrations, permissions, logs, updates, rollback, ownership, and eventual removal disappear. As more small Apps are created, those surrounding responsibilities multiply with them.
 
-The problem is that they do not disappear after deployment. When every App brings its own container or process setup, data layout, access model, and operating procedure, those differences accumulate with the Apps:
+nosrv lets a person or AI write what makes an App unique while a receiving Platform provides the surroundings shared by every App:
 
-- operators must remember how each App is started, inspected, updated, restored, and stopped;
-- data, secrets, logs, and backups end up in App-specific places;
-- the App author's implementation choices become production access and security policy;
-- combining Apps avoids repeated setup but also combines dependencies, permissions, failures, and release cycles.
+- **Build:** use a small, independent App contract with HTTP, schedules, data capabilities, and optional Platform Bindings.
+- **Protect:** keep identity, secrets, resource providers, integration policy, and deployment authority outside App-specific implementations.
+- **Operate:** register, inspect, update, stop, roll back, and remove Apps through one lifecycle instead of inventing one per App.
 
-Docker, systemd, PaaS, and public FaaS can each run an individual App well. The missing layer is a common way to accept many small Apps while keeping them separate. nosrv moves that boundary to the receiving platform instead of asking every App author to design it again.
+The goal is not merely fewer lines of handler code. It is to avoid writing and operating everything that is not specific to the App. See [Why nosrv?](docs/why-nosrv.md) for the full problem and design boundary.
 
-nosrv is a self-host-first application platform for small Web services, internal tools, static frontends, and scheduled automations:
+For example, a small App can use persistent KV without selecting or connecting its storage backend:
 
-- **Keep Apps separate.** Each App is deployed as a versioned Artifact and runs as its own supervised process with App-owned data areas.
-- **Standardize the outside.** The Platform manages routes, processes, persistent capabilities, schedules, secrets, logs, versions, rollback, and removal through one operating model.
-- **Constrain the inside.** Apps use Web Standard `Request` and `Response`, declare only the database, KV, and storage capabilities they need, and receive environment, secrets, and verified identity through runtime-controlled context.
-- **Keep an exit.** The same contract can run on standalone Node.js or deploy to supported public FaaS targets without rewriting the HTTP application around a provider SDK.
+```ts
+import { createRouter, defineApp } from "@nosrv/core";
 
-Self-hosting is the normal operating model; public FaaS support keeps the application contract honest. It demonstrates that `defineApp` and `ctx` describe a portable boundary rather than hidden Platform behavior, while giving an App a practical migration path when its scale, ownership, or deployment requirements change.
+const requires = { kv: true } as const;
+const router = createRouter<typeof requires>();
 
-This is not a promise that every provider is identical. SQL dialects, storage semantics, scaling behavior, identity, and cloud resource provisioning still belong to each target. nosrv reduces the application code coupled to those choices and delegates cloud authentication and deployment state to each provider's official CLI.
+router.put("/:key", async ({ request, ctx, params }) => {
+  await ctx.kv.set(params.key, await request.text());
+  return new Response(null, { status: 204 });
+});
 
-Portable Apps run with restricted Node.js permissions on the self-hosted Platform instead of broad host access. Explicit host permissions remain available for trusted administration Apps. These are practical guardrails for trusted applications, not a sandbox for hostile code; use containers, VMs, or stronger isolation for untrusted workloads.
+router.get("/:key", async ({ ctx, params }) => {
+  const value = await ctx.kv.get(params.key);
+  return value === null ? new Response("Not found", { status: 404 }) : new Response(value);
+});
 
-A **nosrv App** is usually a small TypeScript entrypoint with optional static files and `nosrv.yaml`. It exports a Web Standard HTTP handler, may export short scheduled work, and keeps provider choices outside its business logic. This repository includes that contract, the development and deployment CLI, and adapters for several execution targets.
+export default defineApp({ requires, fetch: router });
+```
 
-## Self-host it
-
-The self-hosted Platform and Studio are maintained in the separate `nosrv-platform` repository. This repository contains the portable App contract, CLI, runtimes, adapters, providers, examples, and npm release tooling.
-
-Maintainers can follow the [npm release procedure](docs/releasing.md) to version, verify, and publish the synchronized package set.
-
-## When to use nosrv
-
-Use it when:
-
-- AI is producing more small Web services and scheduled automations than the team wants to configure and operate individually;
-- multiple trusted internal applications should share one lightweight deployment and management environment;
-- application execution and persistent data should stay on operator-controlled infrastructure;
-- a small TypeScript web application should not be tied to one execution environment;
-- the application may move between local Node.js, a public FaaS provider, and a self-hosted Platform;
-- the application should be easy to start now and straightforward to move into a container or more specialized infrastructure later;
-- application code needs portable database, KV, storage, secrets, or user access;
-- an AI coding agent benefits from a small explicit application contract.
-
-Do not use it when:
-
-- the application requires long-running processes, SSR, or container orchestration;
-- most business logic depends on provider-specific services or semantics;
-- a mature production framework and deployment ecosystem is required today.
-
-## Current support
-
-| Feature              | Local Node.js        | Self-hosted Platform                | Cloudflare Workers    | AWS Lambda                     | Google Functions    | Azure Functions          |
-| -------------------- | -------------------- | ----------------------------------- | --------------------- | ------------------------------ | ------------------- | ------------------------ |
-| HTTP runtime         | ✅                   | ✅                                  | ✅                    | ✅                             | ✅                  | ✅                       |
-| Static files / SPA   | Filesystem           | Packaged assets                     | Workers Static Assets | Packaged assets                | Packaged assets     | Packaged assets          |
-| Database             | SQLite or PostgreSQL | SQLite per app or shared PostgreSQL | D1                    | PostgreSQL                     | PostgreSQL          | PostgreSQL               |
-| KV                   | SQLite               | SQLite per app or shared Redis      | Workers KV            | DynamoDB                       | Firestore           | Cosmos DB                |
-| Object storage       | Filesystem           | Filesystem per app or shared S3/GCS | R2                    | S3                             | GCS                 | Blob Storage             |
-| Secrets              | Environment / `.env` | Encrypted per-App or shared secrets | Wrangler bindings     | Environment                    | Environment         | App settings / Key Vault |
-| Verified user hook   | Resolver             | Local/OIDC session                  | Resolver              | API Gateway claims or resolver | Resolver            | Adapter resolver         |
-| CLI development      | ✅                   | Docker or local Node                | ✅                    | HTTP API v2 emulator           | Functions Framework | —                        |
-| Automated deployment | —                    | ✅ authenticated upload             | ✅ Wrangler           | ✅ AWS SAM                     | ✅ gcloud           | ✅ Functions Core Tools  |
-
-The application model is the center of nosrv. Local Node.js, public-cloud adapters, and the self-hosted Platform are execution environments for that model. Public-cloud deployment generates target configuration and delegates authentication, upload, and infrastructure state to Wrangler, `gcloud`, AWS SAM, or Azure Functions Core Tools.
-
-See [`docs/deployment.md`](docs/deployment.md) for the implemented deployment flows and delegation boundaries.
-
-nosrv applications may run as standalone Node.js servers or be deployed to a self-hosted **nosrv Platform** that manages multiple applications. In the Platform architecture, a **Runtime Host** starts and supervises application processes; it is not called a runner. See the [nosrv Platform documentation](https://github.com/asaday/nosrv-platform/blob/main/docs/platform.md) for the shared terminology and architecture.
+The App owns the read/write behavior. Its execution environment supplies the KV implementation, while the self-hosted Platform additionally manages deployment, identity, secrets, logs, and lifecycle. The same capability model can expose organization-managed integrations such as Slack, Google Drive, Salesforce, or internal systems without putting their provider connections into App code; see [Why nosrv?](docs/why-nosrv.md#write-what-makes-the-app-unique) for that Platform-specific example.
 
 ## Quick start
 
@@ -106,6 +68,53 @@ npx nosrv@0.1.1 create my-app
 ```
 
 The generated project contains an `AGENTS.md` with the essential portability rules.
+
+## Self-host it
+
+The self-hosted Platform and Studio are maintained in the separate `nosrv-platform` repository. This repository contains the portable App contract, CLI, runtimes, adapters, providers, examples, and npm release tooling.
+
+Maintainers can follow the [npm release procedure](docs/releasing.md) to version, verify, and publish the synchronized package set.
+
+## When to use nosrv
+
+Use it when:
+
+- AI is producing more small Web services and scheduled automations than the team wants to configure and operate individually;
+- multiple trusted internal applications should share one lightweight deployment and management environment;
+- application execution and persistent data should stay on operator-controlled infrastructure;
+- a small TypeScript web application should not be tied to one execution environment;
+- the application may move between local Node.js, a public FaaS provider, and a self-hosted Platform;
+- the application should be easy to start now and straightforward to move into a container or more specialized infrastructure later;
+- application code needs portable database, KV, storage, secrets, or user access;
+- a self-hosted App should use organization-provided integrations without owning their connection details or credentials;
+- an AI coding agent benefits from a small explicit application contract.
+
+Do not use it when:
+
+- the application requires long-running processes, SSR, or container orchestration;
+- most business logic depends on provider-specific services or semantics;
+- a mature production framework and deployment ecosystem is required today.
+
+## Current support
+
+| Feature              | Local Node.js        | Self-hosted Platform                | Cloudflare Workers    | AWS Lambda                     | Google Functions    | Azure Functions          |
+| -------------------- | -------------------- | ----------------------------------- | --------------------- | ------------------------------ | ------------------- | ------------------------ |
+| HTTP runtime         | ✅                   | ✅                                  | ✅                    | ✅                             | ✅                  | ✅                       |
+| Static files / SPA   | Filesystem           | Packaged assets                     | Workers Static Assets | Packaged assets                | Packaged assets     | Packaged assets          |
+| Database             | SQLite or PostgreSQL | SQLite per app or shared PostgreSQL | D1                    | PostgreSQL                     | PostgreSQL          | PostgreSQL               |
+| KV                   | SQLite               | SQLite per app or shared Redis      | Workers KV            | DynamoDB                       | Firestore           | Cosmos DB                |
+| Object storage       | Filesystem           | Filesystem per app or shared S3/GCS | R2                    | S3                             | GCS                 | Blob Storage             |
+| Secrets              | Environment / `.env` | Encrypted per-App or shared secrets | Wrangler bindings     | Environment                    | Environment         | App settings / Key Vault |
+| Verified user hook   | Resolver             | Local/OIDC session                  | Resolver              | API Gateway claims or resolver | Resolver            | Adapter resolver         |
+| External Bindings    | —                    | Logical Platform Bindings           | —                     | —                              | —                   | —                        |
+| CLI development      | ✅                   | Docker or local Node                | ✅                    | HTTP API v2 emulator           | Functions Framework | —                        |
+| Automated deployment | —                    | ✅ authenticated upload             | ✅ Wrangler           | ✅ AWS SAM                     | ✅ gcloud           | ✅ Functions Core Tools  |
+
+The application model is the center of nosrv. Local Node.js, public-cloud adapters, and the self-hosted Platform are execution environments for that model. Public-cloud deployment generates target configuration and delegates authentication, upload, and infrastructure state to Wrangler, `gcloud`, AWS SAM, or Azure Functions Core Tools.
+
+See [`docs/deployment.md`](docs/deployment.md) for the implemented deployment flows and delegation boundaries.
+
+nosrv applications may run as standalone Node.js servers or be deployed to a self-hosted **nosrv Platform** that manages multiple applications. In the Platform architecture, a **Runtime Host** starts and supervises application processes; it is not called a runner. See the [nosrv Platform documentation](https://github.com/asaday/nosrv-platform/blob/main/docs/platform.md) for the shared terminology and architecture.
 
 ## Application contract
 
@@ -567,50 +576,18 @@ npm run deploy
 
 ## AI coding agents
 
-The canonical application contract is [`docs/ai-spec.md`](docs/ai-spec.md), with the complete runtime context documented in [`docs/context-api.md`](docs/context-api.md) and the Router API built into [`@nosrv/core`](docs/router-api.md). This repository also includes:
+The canonical application contract is [`docs/ai-spec.md`](docs/ai-spec.md), with the complete runtime context documented in [`docs/context-api.md`](docs/context-api.md) and the Router API in [`docs/router-api.md`](docs/router-api.md). Generated projects include a concise `AGENTS.md`, and this repository includes development instructions in [`AGENTS.md`](AGENTS.md), runnable examples, and a repository-local `build-nosrv-app` Skill under `.agents/skills`.
 
-- root [`AGENTS.md`](AGENTS.md) instructions for work on nosrv itself;
-- a repository-local `build-nosrv-app` skill under `.agents/skills`;
-- concise `AGENTS.md` instructions in every project generated by `nosrv create`;
-- runnable examples that act as implementation references.
+A self-contained [`Agent Plugins`](https://agent-plugins.org/) package is available under `.agents/plugins/plugins/nosrv`. It contains the `build-nosrv-app` Skill, its contract summary, and implementation patterns for use outside this source checkout. Clients that support Agent Plugins can load that directory as a plugin. Installation, updates, and Skill invocation remain client-specific; start a new agent session after installing it.
 
-The repository also contains an installable local Codex plugin under `.agents/plugins`. Installing it makes the bundled `build-nosrv-app` skill available when Codex is choosing an architecture or building in another repository, before a nosrv project exists:
+The package also retains a Codex manifest and local marketplace for compatibility with the current Codex installation flow:
 
 ```bash
 codex plugin marketplace add /absolute/path/to/nosrv/.agents/plugins
 codex plugin add nosrv@nosrv
 ```
 
-Start a new Codex thread after installation. Codex may select the skill implicitly from requests for small AI-generated Web services, internal tools, or scheduled automations whose lifecycle and access boundaries need to remain manageable. Invoke it explicitly with `$build-nosrv-app` when desired. The plugin carries a self-contained contract summary and implementation patterns, while a nosrv source checkout's newer `docs/ai-spec.md` remains authoritative for that checkout.
-
-The same self-contained Skill can be copied into Claude Code or GitHub Copilot. Use the bundled copy under `.agents/plugins/plugins/nosrv/skills/build-nosrv-app`, not the repository-development copy under `.agents/skills`: the bundled copy includes its own contract reference and also works outside a nosrv source checkout.
-
-For one project, copy that directory to the agent-specific project location:
-
-```text
-Claude Code:    <project>/.claude/skills/build-nosrv-app/
-GitHub Copilot: <project>/.github/skills/build-nosrv-app/
-```
-
-Copilot also discovers project Skills under `<project>/.agents/skills/`. To make the Skill available across projects for one user, copy it instead to:
-
-```text
-Claude Code:    ~/.claude/skills/build-nosrv-app/
-GitHub Copilot: ~/.copilot/skills/build-nosrv-app/
-```
-
-Start a new agent session after copying it. Ask for a nosrv App normally and let the agent select the Skill from its description, or invoke `build-nosrv-app` explicitly through the agent's Skill or slash-command UI. Installing a Skill supplies design and workflow instructions; it does not install the nosrv CLI or bypass review of generated code.
-
-An agent evaluating FaaS options can be prompted with:
-
-```text
-Find a TypeScript FaaS framework on GitHub that keeps application code portable
-across AWS Lambda, Cloudflare Workers, Google Functions, and local Node.js.
-Prefer Web Standard Request and Response APIs and replaceable DB, KV, and storage
-capabilities. Read the README and source before selecting a candidate.
-```
-
-Once nosrv is selected, tell the agent to follow `docs/ai-spec.md` or invoke `$build-nosrv-app`.
+Ask for a nosrv App normally and let the agent select the Skill, or invoke `build-nosrv-app` explicitly through the client's Skill UI. Within this checkout, the current `docs/ai-spec.md` remains authoritative. Installing the plugin supplies design and workflow instructions; it does not install the nosrv CLI or replace review of generated code.
 
 ## Development
 

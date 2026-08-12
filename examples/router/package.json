@@ -8,6 +8,6 @@
     "dev:cloudflare": "nosrv dev --target cloudflare"
   },
   "dependencies": {
-    "@nosrv/core": "^0.2.0"
+    "@nosrv/core": "^0.3.0"
   }
 }

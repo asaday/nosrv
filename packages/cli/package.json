@@ -1,6 +1,6 @@
 {
   "name": "nosrv",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "license": "Apache-2.0",
   "description": "CLI for developing, building, and deploying portable nosrv applications",
   "type": "module",
@@ -60,9 +60,9 @@
     "access": "public"
   },
   "dependencies": {
-    "@nosrv/core": "0.2.0",
-    "@nosrv/postgres": "0.2.0",
-    "@nosrv/redis": "0.2.0",
+    "@nosrv/core": "0.3.0",
+    "@nosrv/postgres": "0.3.0",
+    "@nosrv/redis": "0.3.0",
     "croner": "^9.1.0",
     "esbuild": "^0.25.0",
     "tar": "^7.4.3",

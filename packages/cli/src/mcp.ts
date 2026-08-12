@@ -76,7 +76,7 @@ export class McpBinding {
       await this.#rpc("initialize", {
         protocolVersion: "2025-06-18",
         capabilities: {},
-        clientInfo: { name: "nosrv", version: "0.2.0" },
+        clientInfo: { name: "nosrv", version: "0.3.0" },
       });
       await this.#rpc("notifications/initialized", {}, true);
     })();

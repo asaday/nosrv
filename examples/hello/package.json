@@ -10,9 +10,9 @@
     "deploy": "nosrv deploy"
   },
   "dependencies": {
-    "@nosrv/cloudflare": "^0.2.0",
-    "@nosrv/google-cloud": "^0.2.0",
-    "@nosrv/aws": "^0.2.0",
-    "@nosrv/core": "^0.2.0"
+    "@nosrv/cloudflare": "^0.3.0",
+    "@nosrv/google-cloud": "^0.3.0",
+    "@nosrv/aws": "^0.3.0",
+    "@nosrv/core": "^0.3.0"
   }
 }

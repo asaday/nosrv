@@ -5,7 +5,7 @@ const packages = orderedPackages();
 const pending = [];
 const published = [];
 
-if (confirmed) run("npm", ["run", "release:check"]);
+if (confirmed) run("npm", ["run", "check"]);
 
 for (const pkg of packages) {
   const id = `${pkg.manifest.name}@${pkg.manifest.version}`;

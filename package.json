@@ -21,9 +21,10 @@
     "dev": "nosrv dev",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "release:check": "npm run format:check && npm run build && npm run typecheck && npm test && node tools/check-release.js",
-    "release:sync": "node tools/sync-release-version.js && npm install --package-lock-only --ignore-scripts",
-    "release:publish": "node tools/publish-packages.js",
+    "check": "npm run format:check && npm run build && npm run typecheck && npm test && node tools/check-release.js",
+    "publish": "node tools/publish-packages.js",
+    "release": "node tools/create-release.js",
+    "set-version": "node tools/set-version.js",
     "test": "node --test test/**/*.test.ts",
     "typecheck": "tsc --noEmit"
   },

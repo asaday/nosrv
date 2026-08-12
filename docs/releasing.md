@@ -6,24 +6,20 @@ All publishable packages use the version in the root `package.json`. The root wo
 
 Start from a clean working tree. Increment the root version without creating a commit or Git tag:
 
-```bash
-npm version patch --no-git-tag-version
-```
-
-Use `minor` or `major` instead of `patch` when appropriate. Then synchronize every publishable package, internal `@nosrv/*` dependency, and the lockfile with the root version:
+This updates the root version without creating a Git commit or tag, then synchronizes every publishable package, internal `@nosrv/*` dependency, example dependency, CLI MCP client version, and the lockfile. Pass the intended semantic version explicitly, such as `0.3.1`, `0.4.0`, or `1.0.0`.
 
 ```bash
-npm run release:sync
+npm run set-version -- 0.3.0
 ```
 
-Review the resulting manifest and lockfile changes before continuing. Do not edit individual package versions by hand.
+Review the resulting manifest and lockfile changes before continuing. Do not edit individual package versions or example dependencies by hand.
 
 ## Verify and publish
 
 Run the complete release check:
 
 ```bash
-npm run release:check
+npm run check
 ```
 
 This checks formatting, builds publishable TypeScript packages, type-checks the workspace, runs all tests, verifies that package and internal dependency versions match the root version, and inspects every npm tarball.
@@ -31,16 +27,24 @@ This checks formatting, builds publishable TypeScript packages, type-checks the 
 Preview the dependency-ordered publish set without uploading anything:
 
 ```bash
-npm run release:publish
+npm run publish
 ```
 
 After checking `npm whoami`, the version, and the displayed package order, publish all versions that are not already present in the registry:
 
 ```bash
-npm run release:publish -- --confirm
+npm run publish -- --confirm
 ```
 
 The publish command skips an already-published `name@version`, so it can be rerun after a partial failure. npm does not permit replacing an existing version.
+
+After npm publishing succeeds, create the Git commit, annotated tag, push it, and create the GitHub Release page:
+
+```bash
+npm run release
+```
+
+This requires the reviewed release changes to be present, an unused `v<version>` tag, an authenticated `gh` CLI, and the `origin` remote. It stages all current changes, so unrelated changes must be removed before running it. It intentionally runs only after verification and npm publishing.
 
 ## Update nosrv Platform
 

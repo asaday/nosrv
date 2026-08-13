@@ -6,11 +6,13 @@ All publishable packages use the version in the root `package.json`. The root wo
 
 Start from a clean working tree. Increment the root version without creating a commit or Git tag:
 
-This updates the root version without creating a Git commit or tag, then synchronizes every publishable package, internal `@nosrv/*` dependency, example dependency, CLI MCP client version, and the lockfile. Pass the intended semantic version explicitly, such as `0.3.1`, `0.4.0`, or `1.0.0`.
+This prompts for the intended semantic version, then updates the root version without creating a Git commit or tag and synchronizes every publishable package, internal `@nosrv/*` dependency, example dependency, CLI MCP client version, and the lockfile.
 
 ```bash
-npm run set-version -- 0.3.0
+npm run set-version
 ```
+
+For non-interactive use, pass the version explicitly, such as `npm run set-version -- 0.3.1`.
 
 Review the resulting manifest and lockfile changes before continuing. Do not edit individual package versions or example dependencies by hand.
 
@@ -24,13 +26,13 @@ npm run check
 
 This checks formatting, builds publishable TypeScript packages, type-checks the workspace, runs all tests, verifies that package and internal dependency versions match the root version, and inspects every npm tarball.
 
-Preview the dependency-ordered publish set without uploading anything:
+Display the dependency-ordered publish set, then confirm interactively whether to upload the pending versions:
 
 ```bash
 npm run publish
 ```
 
-After checking `npm whoami`, the version, and the displayed package order, publish all versions that are not already present in the registry:
+For non-interactive use, publish all versions that are not already present in the registry with:
 
 ```bash
 npm run publish -- --confirm
@@ -38,13 +40,13 @@ npm run publish -- --confirm
 
 The publish command skips an already-published `name@version`, so it can be rerun after a partial failure. npm does not permit replacing an existing version.
 
-After npm publishing succeeds, create the Git commit, annotated tag, push it, and create the GitHub Release page:
+After npm publishing succeeds, commit all reviewed release changes, push `dev`, and run this from `dev`. It verifies that local `dev` exactly matches `origin/dev`, creates a PR to `main`, squash-merges it, updates local `main`, creates the annotated tag and GitHub Release page, then merges the updated `main` back into the long-lived `dev` branch:
 
 ```bash
 npm run release
 ```
 
-This requires the reviewed release changes to be present, an unused `v<version>` tag, an authenticated `gh` CLI, and the `origin` remote. It stages all current changes, so unrelated changes must be removed before running it. It intentionally runs only after verification and npm publishing.
+`release` does not create a commit, push release commits, or run npm publishing. Run `npm run publish` first. It requires a clean working tree, the current branch to be `dev`, local `dev` to exactly match `origin/dev`, an unused `v<version>` tag, an authenticated `gh` CLI, and the `origin` remote. Starting from `main`, having uncommitted changes, or having unpushed, unpulled, or diverged commits is an error. After creating the release, it merges `main` back into `dev`, so `dev` remains the long-lived development branch and no force-push or re-derivation from `main` is needed.
 
 ## Update nosrv Platform
 

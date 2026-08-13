@@ -1,18 +1,33 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { spawnSync } from "node:child_process";
+import { createInterface } from "node:readline/promises";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
-const version = process.argv[2];
+const packagePath = resolve(root, "package.json");
+const manifest = JSON.parse(readFileSync(packagePath, "utf8"));
+const versionPattern = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/;
+let version = process.argv[2];
 
-if (!version || !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version)) {
+if (!version && process.stdin.isTTY && process.stdout.isTTY) {
+  const prompt = createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    version = (await prompt.question(`New release version (current ${manifest.version}): `)).trim();
+  } catch (error) {
+    if (error?.code !== "ABORT_ERR") throw error;
+    console.error("\nVersion update cancelled.");
+    process.exit(1);
+  } finally {
+    prompt.close();
+  }
+}
+
+if (!versionPattern.test(version ?? "")) {
   console.error("Usage: npm run set-version -- 0.3.0");
   process.exit(1);
 }
 
-const packagePath = resolve(root, "package.json");
-const manifest = JSON.parse(readFileSync(packagePath, "utf8"));
 manifest.version = version;
 writeFileSync(packagePath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
 

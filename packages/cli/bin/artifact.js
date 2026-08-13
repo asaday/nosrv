@@ -7,13 +7,13 @@ import {
   copyPublicDirectory,
   loadConfig,
   resolveApp,
-  resolveAuth,
   resolveEnvironment,
   resolveMeta,
   resolvePermissions,
   resolvePublicConfig,
   resolveResourcesDirectory,
   resolveSchedules,
+  resolveTimezone,
   workerName,
   writeStaticApp,
 } from "./project.js";
@@ -104,13 +104,13 @@ export async function buildArtifact(args, options = {}) {
   const config = await loadConfig(cwd);
   const permissions = resolvePermissions(config.permissions);
   const configuredEnvironment = resolveEnvironment(config.env);
-  const auth = resolveAuth(config.auth);
   const meta = resolveMeta(config.meta);
   const route = config.route;
   if (route !== undefined && (typeof route !== "string" || !route.trim())) {
     throw new Error("route must be a non-empty string");
   }
   const schedules = resolveSchedules(config.schedules);
+  const timezone = resolveTimezone(config.timezone);
   const publicConfig = resolvePublicConfig(cwd, config.spa === true);
   const resourcesDirectory = resolveResourcesDirectory(cwd);
   const appPath = resolveApp(cwd, config.app, {
@@ -158,11 +158,11 @@ export async function buildArtifact(args, options = {}) {
       ...(route ? { route } : {}),
       ...(meta ? { meta } : {}),
       ...(schedules.length ? { schedules } : {}),
+      ...(timezone ? { timezone } : {}),
       ...(publicConfig?.spa ? { spa: true } : {}),
       ...(config.providers?.node ? { providers: { node: config.providers.node } } : {}),
       ...(permissions ? { permissions } : {}),
       ...(configuredEnvironment ? { env: configuredEnvironment } : {}),
-      ...(auth ? { auth } : {}),
     };
     await writeFile(resolve(temp, "nosrv.yaml"), stringify(artifactConfig), "utf8");
     const digest = await artifactDigest(temp);
@@ -220,8 +220,8 @@ export async function runArtifact(args, runDev) {
   workerName(directory, config);
   resolvePermissions(config.permissions);
   resolveEnvironment(config.env);
-  resolveAuth(config.auth);
   resolveSchedules(config.schedules);
+  resolveTimezone(config.timezone);
   if (config.route !== undefined && (typeof config.route !== "string" || !config.route.trim())) {
     throw new Error("Artifact route must be a non-empty string");
   }

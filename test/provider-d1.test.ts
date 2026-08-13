@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { D1Database, type D1DatabaseLike } from "@nosrv/provider-d1";
+import { D1Database, type D1DatabaseLike } from "@nosrv/cloudflare";
 
 test("D1Database binds values and normalizes results", async () => {
   let bound: unknown[] = [];

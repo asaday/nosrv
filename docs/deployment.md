@@ -1,25 +1,51 @@
 # Deployment Design
 
-nosrv generates portable application entrypoints and platform configuration. Public-cloud targets delegate authentication, infrastructure changes, uploads, and deployment state to each platform's official CLI. The self-hosted nosrv Platform accepts Artifacts directly and maintains its own application and version state.
+nosrv Apps have two first-class deployment paths:
+
+- **nosrv Platform** is the default target for a self-hosted, managed collection of Apps. It accepts nosrv Artifacts directly and owns routing, process supervision, versions, rollback, logs, secrets, schedules, identity, and Platform-provided tools.
+- **Public FaaS targets** adapt the same App contract to Cloudflare Workers, Google Functions, AWS Lambda, or Azure Functions. nosrv generates the entrypoint and target configuration, then delegates authentication, infrastructure changes, uploads, and deployment state to the provider's official CLI.
+
+```bash
+# Default: deploy to the current or local nosrv Platform.
+nosrv deploy
+
+# Explicit public-cloud targets.
+nosrv deploy --target cloudflare
+nosrv deploy --target google-functions
+nosrv deploy --target lambda
+nosrv deploy --target azure
+```
+
+The Platform is an additional execution environment for the independent nosrv App specification, not a requirement for using nosrv. Public-cloud adapters do not provide the Platform control plane, and Platform-only capabilities such as named `ctx.tools` groups require a Platform that supplies them.
 
 ## Delegation boundary
 
-| Target             | nosrv owns                                                                            | Official CLI owns                                                                     | Status                                |
-| ------------------ | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ------------------------------------- |
-| Cloudflare Workers | Worker entrypoint, Wrangler config, asset and capability bindings                     | Authentication, build/upload, resource resolution, deployment                         | Implemented                           |
-| nosrv Platform     | Deterministic Artifact, authenticated upload, digest verification, version activation | Self-hosted routing and process supervision                                           | Implemented MVP                       |
-| Google Functions   | Staging bundle, HTTP entrypoint, packaged assets, command arguments                   | Authentication, project selection, build/upload, function create/update               | Implemented for HTTP                  |
-| AWS Lambda         | Staging bundle, handler, assets, SAM template                                         | Authentication, artifact build/upload, CloudFormation, IAM and resource create/update | Implemented for HTTP                  |
-| Netlify Functions  | Staging bundle, Web handler, static assets, redirects, Netlify config                 | Authentication, site linking, upload, environment configuration, deployment           | Implemented for HTTP and static sites |
+| Target             | nosrv CLI generates or owns                                                           | Target runtime, operator, or official CLI owns                                         | Status               |
+| ------------------ | ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | -------------------- |
+| nosrv Platform     | Deterministic Artifact, authenticated upload, digest verification, version activation | Self-hosted routing and process supervision                                           | Implemented MVP      |
+| Cloudflare Workers | Worker entrypoint, Wrangler config, asset and capability bindings                     | Authentication, build/upload, resource resolution, deployment                         | Implemented          |
+| Google Functions   | Staging bundle, HTTP entrypoint, packaged assets, command arguments                   | Authentication, project selection, build/upload, function create/update               | Implemented for HTTP |
+| AWS Lambda         | Staging bundle, handler, assets, SAM template                                         | Authentication, artifact build/upload, CloudFormation, IAM and resource create/update | Implemented for HTTP |
+| Azure Functions    | Node.js v4 staging bundle, HTTP and Timer registration, packaged assets               | Authentication, Function App provisioning, build/upload, environment, deployment      | Implemented          |
 
 For public-cloud targets, nosrv must not reimplement cloud authentication or maintain a competing deployment state database.
 
 ## Authentication prerequisites
 
-Authenticate the provider-owned CLI before publishing:
+For nosrv Platform, `nosrv deploy` uses the current login and starts browser-based login when an interactive deployment has no saved token. Run `nosrv login --url https://nosrv.example` explicitly when selecting or switching Platforms. The detailed Platform flow is described below.
+
+For a public-cloud target, authenticate the provider-owned CLI before publishing:
 
 ```bash
-# Cloudflare: Wrangler is a nosrv dependency.
+# Install target support in the application first.
+npm install -D @nosrv/cloudflare
+# Or: npm install -D @nosrv/google-cloud
+# Or: npm install -D @nosrv/aws
+# Or: npm install -D @nosrv/azure
+# Add this when Google Functions, AWS Lambda, or Azure Functions use PostgreSQL.
+# npm install -D @nosrv/postgres
+
+# Cloudflare: Wrangler is installed via @nosrv/cloudflare.
 npx wrangler login
 npx wrangler whoami
 # For CI, set CLOUDFLARE_API_TOKEN instead.
@@ -36,9 +62,11 @@ aws configure
 aws sts get-caller-identity
 sam --version
 
-# Netlify deployment identity and site access.
-netlify login
-netlify status
+# Azure deployment identity, subscription, and Functions Core Tools.
+az login
+az account set --subscription SUBSCRIPTION
+az account show
+func --version
 ```
 
 Google Application Default Credentials are separate from the account used by the `gcloud` CLI. Run `gcloud auth application-default login` only when local provider code needs to call GCS or Firestore through Google client libraries.
@@ -53,12 +81,13 @@ The self-hosted Platform chooses capability providers globally. Its development 
 App SQLite database and KV files plus filesystem storage. Horizontally scaled installations use
 PostgreSQL, Redis, and S3 or GCS storage instead.
 
-| Target            | Before deploying capability-backed code                                                                                                                                                                             |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Cloudflare        | Create/select the Workers KV namespace, R2 bucket, or D1 database; place the required name or ID in `providers.cloudflare`; configure Wrangler secrets separately.                                                  |
-| Google Functions  | Create/select the Firestore database and GCS bucket, or a reachable PostgreSQL database; grant the required roles/network access; configure runtime environment values or Secret Manager mappings separately.       |
-| AWS Lambda        | Create/select the DynamoDB table and S3 bucket, or a reachable PostgreSQL database; add least-privilege permissions/network access; configure runtime environment values or Secrets Manager integration separately. |
-| Netlify Functions | Configure runtime environment variables and secrets on the site. Database, KV, object storage, identity, and scheduled-function generation are not yet supported by this target.                                    |
+| Target           | Before deploying capability-backed code                                                                                                                                                                              |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| nosrv Platform   | Select Platform-wide providers. The one-node development profile supplies SQLite database and KV plus filesystem storage; replicated installations require operator-provided PostgreSQL, Redis, and S3 or GCS. Configure named external tools and their policy on the Platform. |
+| Cloudflare       | Create/select the Workers KV namespace, R2 bucket, or D1 database; place the required name or ID in `providers.cloudflare`; configure Wrangler secrets separately.                                                   |
+| Google Functions | Create/select the Firestore database and GCS bucket, or a reachable PostgreSQL database; grant the required roles/network access; configure runtime environment values or Secret Manager mappings separately.        |
+| AWS Lambda       | Create/select the DynamoDB table and S3 bucket, or a reachable PostgreSQL database; add least-privilege permissions/network access; configure runtime environment values or Secrets Manager integration separately.  |
+| Azure Functions  | Create/select the Function App, host storage, Blob container, Cosmos DB database/container, or reachable PostgreSQL database; configure managed identity/RBAC, networking, and App settings or Key Vault references. |
 
 Current deployment generation:
 
@@ -73,7 +102,7 @@ It does not currently:
 - run database migrations;
 - generate complete IAM policies for application data access;
 - configure backups, retention, lifecycle rules, encryption policy, billing, or cross-region behavior;
-- provision Google Cloud Scheduler or AWS EventBridge schedules.
+- provision Google Cloud Scheduler or AWS EventBridge schedules. Azure Timer registrations are generated from `schedules`.
 
 Keep secrets out of `nosrv.yaml`; store only non-secret resource identifiers there. Resource creation and permissions should be reviewed explicitly because they can incur cost and outlive an application deployment.
 
@@ -85,7 +114,13 @@ Current command:
 nosrv deploy --target cloudflare
 ```
 
-Wrangler is shipped as a CLI dependency. Authenticate interactively with `npx wrangler login`, or set `CLOUDFLARE_API_TOKEN` for a non-interactive environment.
+Install `@nosrv/cloudflare` in the App so nosrv can resolve Wrangler and the Cloudflare adapter from the application root:
+
+```bash
+npm install -D @nosrv/cloudflare
+```
+
+Authenticate interactively with `npx wrangler login`, or set `CLOUDFLARE_API_TOKEN` for a non-interactive environment.
 
 Flow:
 
@@ -188,6 +223,14 @@ nosrv deploy --target google-functions
 
 The Google Cloud CLI must be installed, authenticated with `gcloud auth login`, and pointed at the intended project. The project may instead be supplied through normal `gcloud` configuration or flags.
 
+Install the target package in the App before deployment:
+
+```bash
+npm install -D @nosrv/google-cloud
+# Add when providers.google-functions.db uses PostgreSQL.
+# npm install -D @nosrv/postgres
+```
+
 Generated files:
 
 ```text
@@ -231,6 +274,14 @@ nosrv deploy --target lambda
 
 The AWS CLI must have usable credentials and the AWS SAM CLI must be installed. Verify the effective identity with `aws sts get-caller-identity`; IAM Identity Center profiles should be refreshed with `aws sso login` before deployment.
 
+Install the target package in the App before deployment:
+
+```bash
+npm install -D @nosrv/aws
+# Add when providers.lambda.db uses PostgreSQL.
+# npm install -D @nosrv/postgres
+```
+
 Generated files:
 
 ```text
@@ -263,29 +314,38 @@ deploy:
 
 The current implementation creates a Lambda Function URL and defaults to `AWS_IAM`. Set `http.auth: none` explicitly for public access. Lambda scheduled-handler adaptation exists, but EventBridge resource generation is not automated yet.
 
-## Netlify Functions
+## Azure Functions
+
+Install the target package in the App before deployment:
+
+```bash
+npm install -D @nosrv/azure
+# Add when providers.azure.db uses PostgreSQL.
+# npm install -D @nosrv/postgres
+```
 
 Current command:
 
 ```bash
-nosrv deploy --target netlify --dry-run
-nosrv deploy --target netlify --prod
+nosrv deploy --target azure --dry-run
+nosrv deploy --target azure --app FUNCTION_APP_NAME
 ```
 
-The official Netlify CLI must be installed and authenticated with `netlify login`. The generated deployment is placed under `.nosrv/netlify/deploy/` with a bundled Web-standard Function, copied static assets, and `netlify.toml`. Existing static files are served directly; remaining paths are rewritten to the nosrv Function. A project containing only `index.html` is deployed without a Function.
+Azure Functions Core Tools v4 must be installed, Azure CLI authentication must be active, and the target Function App must already exist. The generated Node.js programming model v4 project is placed under `.nosrv/azure/deploy/` with a bundled Web-standard HTTP adapter, copied static assets and private resources, `host.json`, and code-based Timer registrations.
 
-`--dry-run` only generates the staging directory. Normal deployment creates a preview deployment; add `--prod` for production and `--site SITE_ID` when site selection is not already linked or available from configuration.
+`--dry-run` only generates the staging directory. Normal deployment delegates to `func azure functionapp publish`. nosrv does not create the subscription, resource group, hosting plan, Function App, storage account, databases, containers, IAM/RBAC, or networking.
 
 Optional non-secret deployment defaults can be stored in `nosrv.yaml`:
 
 ```yaml
 deploy:
-  netlify:
-    site: your-site-id
-    prod: false
+  azure:
+    app: my-function-app
+    authLevel: function
+    # slot: staging
 ```
 
-Secrets and environment values stay in Netlify's site configuration and need no declaration in App code. Do not put secret values in `nosrv.yaml`. Netlify capability providers, SPA fallback routing, and Scheduled Functions generation are intentionally deferred.
+Secrets and environment values stay in Function App settings or Key Vault references and need no declaration in App code. Do not put secret values in `nosrv.yaml`. Configure non-secret resource identifiers under `providers.azure`: Blob Storage uses a container and `AZURE_STORAGE_CONNECTION_STRING` by default, Cosmos DB KV uses a database/container and `AZURE_COSMOS_CONNECTION_STRING`, and PostgreSQL uses `DATABASE_URL`. Environment variable names are configurable. Each five-field nosrv schedule is registered as a six-field Azure NCRONTAB expression by prepending seconds (`0`). Timer timezone is controlled by the Function App host; deployment rejects an explicit non-UTC App `timezone` because nosrv cannot guarantee that host setting. Timer coordination relies on `AzureWebJobsStorage`; failed timer invocations are not automatically retried.
 
 ## Shared implementation requirements
 

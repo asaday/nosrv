@@ -3,7 +3,7 @@ const isGitHubPages = location.hostname.endsWith(".github.io");
 const owner = isGitHubPages ? location.hostname.split(".")[0] : "OWNER";
 const repository = isGitHubPages && pageParts.length ? pageParts[0] : "nosrv";
 const repositoryUrl = isGitHubPages ? `https://github.com/${owner}/${repository}` : "../";
-const createCommand = `npx github:${owner}/${repository} create my-app`;
+const createCommand = "npx nosrv create my-app";
 
 document.querySelectorAll("[data-repo-link]").forEach((link) => {
   link.href = repositoryUrl;

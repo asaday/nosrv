@@ -9,6 +9,23 @@ export interface AppSchedule {
   cron: string;
 }
 
+export function normalizeAppTimezone(value: unknown): string | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value !== "string" || !value.trim()) {
+    throw new TypeError("timezone must be a non-empty IANA time zone identifier");
+  }
+  const timezone = value.trim();
+  if (timezone !== "UTC" && !timezone.includes("/")) {
+    throw new TypeError(`Invalid IANA time zone identifier: ${timezone}`);
+  }
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: timezone }).format();
+  } catch {
+    throw new TypeError(`Invalid IANA time zone identifier: ${timezone}`);
+  }
+  return timezone;
+}
+
 export function isAppName(value: unknown): value is string {
   return typeof value === "string" && /^[a-z0-9](?:[a-z0-9-]{0,62})$/.test(value);
 }
@@ -395,7 +412,8 @@ export interface Database {
 }
 
 export interface PlatformInfo {
-  readonly name: "node" | "cloudflare" | "lambda" | "google-functions" | (string & {});
+  readonly name:
+    "node" | "cloudflare" | "lambda" | "google-functions" | "azure-functions" | (string & {});
 }
 
 export interface User {
@@ -405,10 +423,22 @@ export interface User {
   thumbnail?: string;
 }
 
+export interface ToolCallResult {
+  content: unknown[];
+  structuredContent?: unknown;
+  isError?: boolean;
+}
+
+/** A Platform-managed external capability, such as an MCP server. */
+export interface Tool {
+  (tool: string, arguments_?: Readonly<Record<string, unknown>>): Promise<ToolCallResult>;
+}
+
 export interface CapabilityRequirements {
   db?: boolean;
   kv?: boolean;
   storage?: boolean;
+  tools?: readonly string[];
 }
 
 export interface AppContext {
@@ -419,15 +449,22 @@ export interface AppContext {
   kv?: KV;
   storage?: ObjectStorage;
   db?: Database;
+  tools: Readonly<Record<string, Tool>>;
   secrets: Secrets;
   resources: Resources;
   user: User | null;
 }
 
-type RequiredContext<R extends CapabilityRequirements> = Omit<AppContext, "kv" | "storage" | "db"> &
+type RequiredContext<R extends CapabilityRequirements> = Omit<
+  AppContext,
+  "kv" | "storage" | "db" | "tools"
+> &
   (R["kv"] extends true ? { kv: KV } : {}) &
   (R["storage"] extends true ? { storage: ObjectStorage } : {}) &
-  (R["db"] extends true ? { db: Database } : {});
+  (R["db"] extends true ? { db: Database } : {}) &
+  (R["tools"] extends readonly (infer N extends string)[]
+    ? { tools: Readonly<Record<N, Tool>> }
+    : { tools: Readonly<Record<string, Tool>> });
 
 export type AppContextFor<R extends CapabilityRequirements> = RequiredContext<R>;
 
@@ -480,4 +517,10 @@ export function validateCapabilities(app: NosrvApp, context: AppContext): void {
   if (app.requires?.storage && !context.storage)
     throw new Error("Required capability is unavailable: storage");
   if (app.requires?.db && !context.db) throw new Error("Required capability is unavailable: db");
+  for (const name of app.requires?.tools ?? []) {
+    if (!context.tools[name]) throw new Error(`Required tool is unavailable: ${name}`);
+  }
 }
+
+export * from "./router.js";
+export * from "./sql.js";

@@ -6,7 +6,7 @@ import {
   createLambdaScheduledHandler,
   lambdaEventToRequest,
   responseToLambdaResult,
-} from "@nosrv/adapter-lambda";
+} from "@nosrv/aws";
 import { defineApp } from "@nosrv/core";
 
 function event(overrides: Partial<APIGatewayProxyEventV2> = {}): APIGatewayProxyEventV2 {

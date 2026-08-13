@@ -365,13 +365,13 @@ function printPlatformApp(app, origin) {
   if (app.runtime?.startedAt) console.log(`Started: ${app.runtime.startedAt}`);
   if (app.configuration) {
     console.log(`Permissions: ${JSON.stringify(app.configuration.permissions ?? "portable")}`);
-    console.log(`Auth: ${app.configuration.auth}`);
     console.log(`Public assets: ${app.configuration.public ? "yes" : "no"}`);
     console.log(`Private resources: ${app.configuration.resources ? "yes" : "no"}`);
     if (app.configuration.schedules.length) {
+      console.log(`Timezone: ${app.configuration.timezone ?? "runtime local"}`);
       console.log("Schedules:");
       for (const schedule of app.configuration.schedules) {
-        console.log(`  ${schedule.name}: ${schedule.cron} ${schedule.timezone}`);
+        console.log(`  ${schedule.name}: ${schedule.cron}`);
       }
     } else console.log("Schedules: none");
   }
@@ -524,6 +524,34 @@ export async function platformCommand(args, usage) {
   const config = await loadConfig(cwd);
   const connection = await platformConnection(config, rawOperationArgs);
   const jsonOutput = operationArgs.includes("--json");
+
+  if (operation === "tools") {
+    const action = operationArgs.find((argument) => !argument.startsWith("-"));
+    if (action !== "list") throw new Error(`tools requires list\n\n${usage}`);
+    const catalog = await platformRequest(connection, "/_platform/tools", {
+      signal: AbortSignal.timeout(30_000),
+    }).catch((error) => {
+      if (error?.name === "TimeoutError") {
+        throw new Error("Platform tool catalog request timed out after 30 seconds");
+      }
+      throw error;
+    });
+    if (jsonOutput) {
+      writePlatformResult(catalog, true);
+      return;
+    }
+    if (!catalog.tools.length) {
+      console.log("No Platform tools.");
+      return;
+    }
+    for (const group of catalog.tools) {
+      console.log(`${group.name}${group.available ? "" : " (unavailable)"}`);
+      for (const tool of group.tools) {
+        console.log(`  ${tool.name}${tool.description ? ` - ${tool.description}` : ""}`);
+      }
+    }
+    return;
+  }
 
   if (operation === "link") {
     const path = operationArgs[0];

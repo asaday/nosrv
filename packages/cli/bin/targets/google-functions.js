@@ -15,6 +15,7 @@ import {
   workerName,
   writeStaticApp,
 } from "../project.js";
+import { resolveCloudPackage, resolvePostgresPackage } from "./packages.js";
 import { bundleDeployment, readOption } from "./shared.js";
 
 async function generateGoogleDeployment(cwd, appPath, config) {
@@ -35,6 +36,8 @@ async function generateGoogleDeployment(cwd, appPath, config) {
     await copyPublicDirectory(resourcesDirectory, resolve(output, "resources"));
   const provider = config.providers?.["google-functions"] ?? {};
   const postgres = postgresDatabaseConfig(cwd, config, "google-functions");
+  const googlePackage = resolveCloudPackage(cwd, "google-functions");
+  const postgresPackage = postgres ? resolvePostgresPackage(cwd, "Google Functions") : null;
   if (provider.storage && (provider.storage.provider ?? "gcs") !== "gcs")
     throw new Error(`Unsupported Google Functions storage provider: ${provider.storage.provider}`);
   if (provider.kv && (provider.kv.provider ?? "firestore") !== "firestore")
@@ -62,9 +65,9 @@ async function generateGoogleDeployment(cwd, appPath, config) {
     .filter(Boolean)
     .join(", ");
   const require = createRequire(import.meta.url);
-  const adapterPath = require.resolve("@nosrv/adapter-google-functions");
-  const resourceProviderPath = require.resolve("@nosrv/provider-filesystem");
-  const postgresProviderPath = require.resolve("@nosrv/provider-postgres");
+  const adapterPath = googlePackage.entryPath;
+  const resourceProviderPath = resolve(import.meta.dirname, "../../dist/filesystem.js");
+  const postgresProviderPath = postgresPackage?.entryPath;
   const entry = `import { createGoogleFunctionsHandler } from ${JSON.stringify(adapterPath)};
 import { FilesystemResources } from ${JSON.stringify(resourceProviderPath)};
 ${postgres ? `import { PostgresDatabase } from ${JSON.stringify(postgresProviderPath)};` : ""}
@@ -144,6 +147,8 @@ async function generateGoogleFunctions(cwd, appPath, config) {
   const storage = config.providers?.["google-functions"]?.storage;
   const kv = config.providers?.["google-functions"]?.kv;
   const postgres = postgresDatabaseConfig(cwd, config, "google-functions");
+  const googlePackage = resolveCloudPackage(cwd, "google-functions");
+  const postgresPackage = postgres ? resolvePostgresPackage(cwd, "Google Functions") : null;
   const publicConfig = await stagePublicDirectory(
     cwd,
     "google-functions",
@@ -174,15 +179,20 @@ async function generateGoogleFunctions(cwd, appPath, config) {
     .filter(Boolean)
     .join(", ");
   const adapterOptions = googleOptions ? `, { ${googleOptions} }` : "";
-  const entry = `import { http } from "@google-cloud/functions-framework";\nimport { createGoogleFunctionsHandler } from "@nosrv/adapter-google-functions";\nimport { FilesystemResources } from "@nosrv/provider-filesystem";\n${postgres ? 'import { PostgresDatabase } from "@nosrv/provider-postgres";\n' : ""}import app from ${JSON.stringify(moduleSpecifier(outputDirectory, resolvedAppPath))};\nfunction requiredEnvironment(name) { const value = process.env[name]; if (!value) throw new Error(\`PostgreSQL database requires \${name}\`); return value; }\n\nhttp("nosrv", createGoogleFunctionsHandler(app${adapterOptions}));\n`;
+  const frameworkPath = googlePackage.require.resolve("@google-cloud/functions-framework");
+  const resourceProviderPath = resolve(import.meta.dirname, "../../dist/filesystem.js");
+  const entry = `import { http } from ${JSON.stringify(frameworkPath)};\nimport { createGoogleFunctionsHandler } from ${JSON.stringify(googlePackage.entryPath)};\nimport { FilesystemResources } from ${JSON.stringify(resourceProviderPath)};\n${postgresPackage ? `import { PostgresDatabase } from ${JSON.stringify(postgresPackage.entryPath)};\n` : ""}import app from ${JSON.stringify(moduleSpecifier(outputDirectory, resolvedAppPath))};\nfunction requiredEnvironment(name) { const value = process.env[name]; if (!value) throw new Error(\`PostgreSQL database requires \${name}\`); return value; }\n\nhttp("nosrv", createGoogleFunctionsHandler(app${adapterOptions}));\n`;
   await writeFile(entryPath, entry, "utf8");
   return entryPath;
 }
 
 export async function runGoogleFunctionsDev(cwd, appPath, config, { hostname, port }) {
   const entryPath = await generateGoogleFunctions(cwd, appPath, config);
+  const googlePackage = resolveCloudPackage(cwd, "google-functions");
+  const frameworkDirectory = dirname(
+    googlePackage.require.resolve("@google-cloud/functions-framework"),
+  );
   const require = createRequire(import.meta.url);
-  const frameworkDirectory = dirname(require.resolve("@google-cloud/functions-framework"));
   const frameworkBin = resolve(frameworkDirectory, "main.js");
   const tsxLoader = require.resolve("tsx/esm");
   const args = [

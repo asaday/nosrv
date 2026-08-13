@@ -1,4 +1,5 @@
 import { existsSync } from "node:fs";
+import { timingSafeEqual } from "node:crypto";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { Cron } from "croner";
@@ -11,6 +12,7 @@ import {
   resolvePublicConfig,
   resolveResourcesDirectory,
   resolveSchedules,
+  resolveTimezone,
   stagePublicDirectory,
   workerName,
   writeStaticApp,
@@ -26,6 +28,13 @@ function readOption(args, name) {
 }
 function readTarget(args, fallback = "node") {
   return readOption(args, "--target") ?? readOption(args, "-t") ?? fallback;
+}
+
+function authorizedToken(request, expected) {
+  const supplied = request.headers.get("authorization")?.replace(/^Bearer /, "") ?? "";
+  const actual = Buffer.from(supplied);
+  const wanted = Buffer.from(expected);
+  return actual.length === wanted.length && timingSafeEqual(actual, wanted);
 }
 
 export async function dev(args, options = {}) {
@@ -81,7 +90,7 @@ export async function dev(args, options = {}) {
   const resolvedAppPath =
     appPath ?? (await writeStaticApp(resolve(generatedRoot, "static-app.mjs")));
   if (process.env.NOSRV_BUNDLED_APP !== "true") await registerTypeScript(cwd, resolvedAppPath);
-  const { listen, resolveSignedPlatformUser } = await import("@nosrv/runtime-node");
+  const { listen, resolveSignedPlatformUser } = await import("nosrv/runtime/node");
   const module = await import(pathToFileURL(resolvedAppPath).href);
   const app = module.default?.fetch ? module.default : module.default?.default;
   if (!app || typeof app.fetch !== "function") {
@@ -105,12 +114,12 @@ export async function dev(args, options = {}) {
         throw new Error(
           "Redis Platform KV requires NOSRV_PLATFORM_REDIS_URL and NOSRV_PLATFORM_APP_ID",
         );
-      const { RedisKV } = await import("@nosrv/provider-redis");
+      const { RedisKV } = await import("@nosrv/redis");
       kv = new RedisKV(url, `nosrv:${platformAppId}:`);
     } else if (platformDataDirectory && platformKVBackend !== "sqlite") {
       throw new Error(`Unsupported Platform KV backend: ${platformKVBackend}`);
     } else if (nodeKV?.provider === "sqlite" || !nodeKV?.provider) {
-      const { SQLiteKV } = await import("@nosrv/provider-sqlite");
+      const { SQLiteKV } = await import("nosrv/runtime/sqlite");
       kv = new SQLiteKV(
         platformDataDirectory
           ? resolve(platformDataDirectory, "kv.sqlite")
@@ -124,13 +133,13 @@ export async function dev(args, options = {}) {
   if (platformDataDirectory && app.requires?.storage && platformStorageBackend === "s3") {
     const bucket = process.env.NOSRV_PLATFORM_STORAGE_BUCKET;
     if (!bucket) throw new Error("S3 Platform storage requires NOSRV_PLATFORM_STORAGE_BUCKET");
-    const { S3ObjectStorage } = await import("@nosrv/provider-s3");
+    const { S3ObjectStorage } = await import("@nosrv/aws");
     if (!platformAppId) throw new Error("S3 Platform storage requires NOSRV_PLATFORM_APP_ID");
     storage = new S3ObjectStorage(bucket, undefined, `apps/${platformAppId}/`);
   } else if (platformDataDirectory && app.requires?.storage && platformStorageBackend === "gcs") {
     const bucket = process.env.NOSRV_PLATFORM_STORAGE_BUCKET;
     if (!bucket) throw new Error("GCS Platform storage requires NOSRV_PLATFORM_STORAGE_BUCKET");
-    const { GCSObjectStorage } = await import("@nosrv/provider-gcs");
+    const { GCSObjectStorage } = await import("@nosrv/google-cloud");
     if (!platformAppId) throw new Error("GCS Platform storage requires NOSRV_PLATFORM_APP_ID");
     storage = new GCSObjectStorage(bucket, undefined, `apps/${platformAppId}/`);
   } else if (
@@ -140,13 +149,13 @@ export async function dev(args, options = {}) {
   ) {
     throw new Error(`Unsupported Platform storage backend: ${platformStorageBackend}`);
   } else if (nodeStorage?.provider === "memory") {
-    const { MemoryObjectStorage } = await import("@nosrv/provider-memory");
+    const { MemoryObjectStorage } = await import("nosrv/runtime/memory");
     storage = new MemoryObjectStorage();
   } else if (
     (nodeStorage || app.requires?.storage) &&
     (nodeStorage?.provider ?? "filesystem") === "filesystem"
   ) {
-    const { FilesystemObjectStorage } = await import("@nosrv/provider-filesystem");
+    const { FilesystemObjectStorage } = await import("nosrv/runtime/filesystem");
     storage = new FilesystemObjectStorage(
       platformDataDirectory
         ? resolve(platformDataDirectory, "storage")
@@ -165,12 +174,12 @@ export async function dev(args, options = {}) {
       throw new Error(
         "PostgreSQL Platform DB requires NOSRV_PLATFORM_POSTGRES_URL and NOSRV_PLATFORM_APP_ID",
       );
-    const { PostgresDatabase } = await import("@nosrv/provider-postgres");
+    const { PostgresDatabase } = await import("@nosrv/postgres");
     db = new PostgresDatabase(url, platformAppId);
   } else if (app.requires?.db && platformDataDirectory && platformDBBackend !== "sqlite") {
     throw new Error(`Unsupported Platform DB backend: ${platformDBBackend}`);
   } else if (nodeDatabase?.provider === "sqlite" || (!nodeDatabase?.provider && app.requires?.db)) {
-    const { SQLiteDatabase } = await import("@nosrv/provider-sqlite");
+    const { SQLiteDatabase } = await import("nosrv/runtime/sqlite");
     db = new SQLiteDatabase(
       platformDataDirectory
         ? resolve(platformDataDirectory, "database.sqlite")
@@ -185,13 +194,35 @@ export async function dev(args, options = {}) {
     const appId = nodeDatabase.appId ?? workerName(cwd, config);
     if (typeof appId !== "string" || !appId)
       throw new Error("Node.js PostgreSQL database appId must be a non-empty string");
-    const { PostgresDatabase } = await import("@nosrv/provider-postgres");
+    const { PostgresDatabase } = await import("@nosrv/postgres");
     db = new PostgresDatabase(url, appId);
   } else if (nodeDatabase?.provider) {
     throw new Error(`Unsupported Node.js database provider: ${nodeDatabase.provider}`);
   }
 
   const configuredEnvironment = resolveEnvironment(config.env);
+  const toolsConfiguration = process.env.NOSRV_PLATFORM_TOOLS_JSON
+    ? JSON.parse(process.env.NOSRV_PLATFORM_TOOLS_JSON)
+    : {};
+  const tools = {};
+  const requiredTools = app.requires?.tools ?? [];
+  if (
+    !Array.isArray(requiredTools) ||
+    requiredTools.some((name) => typeof name !== "string" || !name)
+  ) {
+    throw new Error("requires.tools must be an array of non-empty tool names");
+  }
+  if (new Set(requiredTools).size !== requiredTools.length) {
+    throw new Error("requires.tools contains duplicates");
+  }
+  if (requiredTools.length) {
+    const { createMcpBinding } = await import("nosrv/runtime/mcp");
+    for (const name of requiredTools) {
+      const configured = toolsConfiguration[name];
+      if (!configured) throw new Error(`Required tool is unavailable: ${name}`);
+      tools[name] = createMcpBinding(configured);
+    }
+  }
   const runtimeOptions = {
     hostname,
     port,
@@ -209,9 +240,11 @@ export async function dev(args, options = {}) {
       "AWS_S3_FORCE_PATH_STYLE",
       "GOOGLE_APPLICATION_CREDENTIALS",
       "NOSRV_SCHEDULE_CLAIM_TOKEN",
+      "NOSRV_SCHEDULE_RUN_TOKEN",
       ...(databaseUrlEnv ? [databaseUrlEnv] : []),
       ...(process.env.NOSRV_IDENTITY_SECRET ? ["NOSRV_IDENTITY_SECRET"] : []),
       ...(process.env.NOSRV_APP_SECRETS_JSON ? ["NOSRV_APP_SECRETS_JSON"] : []),
+      ...(process.env.NOSRV_PLATFORM_TOOLS_JSON ? ["NOSRV_PLATFORM_TOOLS_JSON"] : []),
     ],
     ...(process.env.NOSRV_APP_SECRETS_JSON
       ? {
@@ -223,9 +256,10 @@ export async function dev(args, options = {}) {
     ...(kv ? { kv } : {}),
     ...(storage ? { storage } : {}),
     ...(db ? { db } : {}),
+    tools,
     ...(resourcesDirectory
       ? {
-          resources: new (await import("@nosrv/provider-filesystem")).FilesystemResources(
+          resources: new (await import("nosrv/runtime/filesystem")).FilesystemResources(
             resourcesDirectory,
           ),
         }
@@ -245,82 +279,137 @@ export async function dev(args, options = {}) {
       : {}),
   };
   const schedules = resolveSchedules(config.schedules);
+  const timezone = resolveTimezone(config.timezone);
+  const schedulesDisabled = args.includes("--disable-schedules");
   if (schedules.length && typeof app.scheduled !== "function") {
     throw new Error("nosrv.yaml declares schedules but the app does not export scheduled()");
   }
   if (!schedules.length && typeof app.scheduled === "function") {
     console.warn("App exports scheduled() but nosrv.yaml declares no schedules");
   }
-  const running = await listen(app, runtimeOptions);
+  const { createScheduledRunner } = schedules.length
+    ? await import("nosrv/runtime/node")
+    : { createScheduledRunner: undefined };
+  const runScheduled = createScheduledRunner?.(app, runtimeOptions);
+  const runningSchedules = new Set();
+  const executeSchedule = async (schedule, trigger, scheduledTime) => {
+    if (runningSchedules.has(schedule.name)) {
+      throw new Error(`Schedule is already running: ${schedule.name}`);
+    }
+    runningSchedules.add(schedule.name);
+    console.log(`Schedule started: ${schedule.name} (${trigger})`);
+    try {
+      await runScheduled({
+        name: schedule.name,
+        cron: schedule.cron,
+        scheduledTime,
+        trigger,
+      });
+      console.log(`Schedule completed: ${schedule.name} (${Date.now() - scheduledTime}ms)`);
+    } finally {
+      runningSchedules.delete(schedule.name);
+    }
+  };
+  const scheduleRunToken = process.env.NOSRV_SCHEDULE_RUN_TOKEN;
+  const servedApp = scheduleRunToken
+    ? {
+        ...app,
+        async fetch(request, context) {
+          const match = new URL(request.url).pathname.match(
+            /^\/_nosrv\/runtime\/schedules\/([^/]+)\/run$/,
+          );
+          if (!match) return app.fetch(request, context);
+          if (request.method !== "POST") {
+            return Response.json({ error: "Method not allowed" }, { status: 405 });
+          }
+          if (!authorizedToken(request, scheduleRunToken)) {
+            return Response.json({ error: "Runtime authentication required" }, { status: 401 });
+          }
+          const name = decodeURIComponent(match[1]);
+          const schedule = schedules.find((candidate) => candidate.name === name);
+          if (!schedule) return Response.json({ error: "Schedule not found" }, { status: 404 });
+          const scheduledTime = Date.now();
+          try {
+            await executeSchedule(schedule, "manual", scheduledTime);
+            return Response.json({
+              name: schedule.name,
+              cron: schedule.cron,
+              scheduledTime,
+              trigger: "manual",
+              status: "completed",
+            });
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            console.error(`Schedule failed: ${schedule.name}`, error);
+            return Response.json(
+              { error: message },
+              { status: message.startsWith("Schedule is already running:") ? 409 : 500 },
+            );
+          }
+        },
+      }
+    : app;
+  const running = await listen(servedApp, runtimeOptions);
   const cronJobs = [];
-  if (schedules.length) {
-    const { createScheduledRunner } = await import("@nosrv/runtime-node");
-    const runScheduled = createScheduledRunner(app, runtimeOptions);
+  if (schedules.length && !schedulesDisabled) {
     for (const schedule of schedules) {
-      let runningSchedule = false;
-      const job = new Cron(schedule.cron, { timezone: "UTC", protect: true }, async () => {
-        if (runningSchedule) {
-          console.warn(`Schedule skipped because its previous run is active: ${schedule.name}`);
-          return;
-        }
-        runningSchedule = true;
-        let started = Date.now();
-        if (process.env.NOSRV_SCHEDULE_CLAIM_URL) {
-          const token = process.env.NOSRV_SCHEDULE_CLAIM_TOKEN;
-          const appId = process.env.NOSRV_PLATFORM_APP_ID;
-          const instanceId = process.env.NOSRV_PLATFORM_INSTANCE_ID;
-          if (!token || !appId || !instanceId) {
-            console.error("Platform schedule claiming is not fully configured");
-            runningSchedule = false;
+      const job = new Cron(
+        schedule.cron,
+        { ...(timezone ? { timezone } : {}), protect: true },
+        async () => {
+          if (runningSchedules.has(schedule.name)) {
+            console.warn(`Schedule skipped because its previous run is active: ${schedule.name}`);
             return;
           }
-          try {
-            const response = await fetch(process.env.NOSRV_SCHEDULE_CLAIM_URL, {
-              method: "POST",
-              headers: {
-                authorization: `Bearer ${token}`,
-                "content-type": "application/json",
-              },
-              body: JSON.stringify({ appId, scheduleName: schedule.name, instanceId }),
-            });
-            if (!response.ok) throw new Error(`Schedule claim failed with HTTP ${response.status}`);
-            const claim = await response.json();
-            if (!claim.claimed) {
-              console.log(`Schedule claimed by another instance: ${schedule.name}`);
-              runningSchedule = false;
+          let started = Date.now();
+          if (process.env.NOSRV_SCHEDULE_CLAIM_URL) {
+            const token = process.env.NOSRV_SCHEDULE_CLAIM_TOKEN;
+            const appId = process.env.NOSRV_PLATFORM_APP_ID;
+            const instanceId = process.env.NOSRV_PLATFORM_INSTANCE_ID;
+            if (!token || !appId || !instanceId) {
+              console.error("Platform schedule claiming is not fully configured");
               return;
             }
-            started = claim.scheduledTime;
-          } catch (error) {
-            console.error(`Schedule claim failed: ${schedule.name}`, error);
-            runningSchedule = false;
-            return;
+            try {
+              const response = await fetch(process.env.NOSRV_SCHEDULE_CLAIM_URL, {
+                method: "POST",
+                headers: {
+                  authorization: `Bearer ${token}`,
+                  "content-type": "application/json",
+                },
+                body: JSON.stringify({ appId, scheduleName: schedule.name, instanceId }),
+              });
+              if (!response.ok)
+                throw new Error(`Schedule claim failed with HTTP ${response.status}`);
+              const claim = await response.json();
+              if (!claim.claimed) {
+                console.log(`Schedule claimed by another instance: ${schedule.name}`);
+                return;
+              }
+              started = claim.scheduledTime;
+            } catch (error) {
+              console.error(`Schedule claim failed: ${schedule.name}`, error);
+              return;
+            }
           }
-        }
-        console.log(`Schedule started: ${schedule.name}`);
-        try {
-          await runScheduled({
-            name: schedule.name,
-            cron: schedule.cron,
-            scheduledTime: started,
-            trigger: "cron",
-          });
-          console.log(`Schedule completed: ${schedule.name} (${Date.now() - started}ms)`);
-        } catch (error) {
-          console.error(`Schedule failed: ${schedule.name}`, error);
-        } finally {
-          runningSchedule = false;
-        }
-      });
+          try {
+            await executeSchedule(schedule, "cron", started);
+          } catch (error) {
+            console.error(`Schedule failed: ${schedule.name}`, error);
+          }
+        },
+      );
       cronJobs.push(job);
     }
   }
   console.log(`nosrv dev server`);
   console.log(`App: ${appPath ?? "(static only)"}`);
   console.log(`Local: http://${running.hostname}:${running.port}`);
-  if (schedules.length)
+  if (schedules.length && schedulesDisabled) {
+    console.log("Schedules: automatic execution disabled");
+  } else if (schedules.length)
     console.log(
-      `Schedules: ${schedules.map((schedule) => `${schedule.name} (${schedule.cron} UTC)`).join(", ")}`,
+      `Schedules: ${schedules.map((schedule) => `${schedule.name} (${schedule.cron} ${timezone ?? "runtime local"})`).join(", ")}`,
     );
 
   const shutdown = () => {

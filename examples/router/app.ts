@@ -1,5 +1,5 @@
 import { defineApp } from "@nosrv/core";
-import { createRouter, HttpError, json, noContent, readJson } from "@nosrv/router";
+import { createRouter, HttpError, json, noContent, readJson } from "@nosrv/core";
 
 const router = createRouter();
 

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { GCSObjectStorage } from "@nosrv/provider-gcs";
+import { GCSObjectStorage } from "@nosrv/google-cloud";
 
 test("GCS storage prefixes Platform App keys without exposing the prefix", async () => {
   const fileNames: string[] = [];

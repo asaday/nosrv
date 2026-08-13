@@ -44,6 +44,27 @@ export default defineApp({
 
 Available declared portable capabilities are `kv`, `storage`, and `db`. Read-only packaged resources are always available through `ctx.resources`, like `ctx.env`, `ctx.secrets`, and `ctx.user`.
 
+Platform-managed integrations are declared by logical name in App code:
+
+```ts
+export default defineApp({
+  requires: { tools: ["drive"] },
+  async fetch(_request, ctx) {
+    return Response.json(await ctx.tools.drive("search_files", { query: "report" }));
+  },
+});
+```
+
+The Platform resolves the logical tool group name to its provider, connection, credentials, and permitted operations. Tool group names must match a capability offered by the target Platform. MCP is currently a self-hosted Platform and Node runtime capability. Do not repeat tool declarations in `nosrv.yaml`; that file is reserved for deployment metadata that cannot be expressed by the App definition.
+
+Before implementing Slack, Google Drive, Salesforce, or internal-service access, inspect the target Platform instead of guessing its tool contract:
+
+```bash
+nosrv tools list --json
+```
+
+Use only the returned logical group names, operation names, descriptions, and input schemas. The command is read-only and does not return provider URLs or credentials. Declare selected groups in `requires.tools`; do not copy the Platform catalog or connection configuration into `nosrv.yaml`.
+
 See the [`ctx` API reference](./context-api.md) for the complete method signatures, return types, examples, and portability boundaries.
 
 - The runtime or deployment target decides which values are available through `ctx.env` and `ctx.secrets`; App code does not declare their names.
@@ -84,13 +105,13 @@ export default defineApp({
 
 ## Routing and HTTP
 
-Small applications may implement `fetch` directly. Use `@nosrv/router` when multiple routes, parameters, middleware, or body helpers improve clarity.
+Small applications may implement `fetch` directly. Use the Router API exported from `@nosrv/core` when multiple routes, parameters, middleware, or body helpers improve clarity.
 
 See the [Router API reference](./router-api.md) for the complete route, middleware, mounting, body, response, and cookie helper contracts.
 
 ```ts
 import { defineApp } from "@nosrv/core";
-import { createRouter, readJson } from "@nosrv/router";
+import { createRouter, readJson } from "@nosrv/core";
 
 const requires = { db: true } as const;
 const router = createRouter<typeof requires>();
@@ -143,15 +164,17 @@ export default defineApp({
 });
 ```
 
-Declare named five-field UTC cron expressions in `nosrv.yaml`:
+Declare named five-field cron expressions in `nosrv.yaml`:
 
 ```yaml
+timezone: Asia/Tokyo # Optional; applies to every schedule.
 schedules:
   - name: daily-cleanup
     cron: "0 3 * * *"
 ```
 
 - Make work idempotent: providers may duplicate a trigger, and the Node.js MVP may miss one while an App is stopped.
+- `timezone` accepts an IANA time-zone identifier. When omitted, Node.js and nosrv Platform use the runtime process or OS local time zone. Specify `UTC` when UTC behavior must be portable and explicit. Some public-cloud schedulers cannot apply an App-specific time zone.
 - Portable schedules use five standard cron fields with numeric values, `*`, lists, ranges, and steps; English month and weekday names are also accepted. Schedule names and normalized cron expressions must be unique within an App.
 - Keep scheduled work short; do not use it as a long-running worker.
 - `ctx.user` is `null` in a scheduled handler because there is no request identity.
@@ -218,14 +241,7 @@ permissions: "*"
 
 This disables the Node.js Permission Model for that App, exposes the trusted Platform environment, and is equivalent to granting the App the Platform user's host access. The Platform must enable unrestricted Apps with `allowUnrestrictedApps: true` in its configuration. Use it only when narrower permissions cannot express the requirement.
 
-An App may ask its deployment target to authenticate requests before they reach the App:
-
-```yaml
-auth:
-  mode: required
-```
-
-`auth.mode` is `required` or `optional`. The self-hosted Platform supports one local administrator or generic OIDC. A required App redirects HTML navigation to the Platform login page and returns `401` to unauthenticated API requests. An optional App remains reachable anonymously unless its Platform deployment has access policies, and receives `ctx.user` when a verified Platform session exists. Platform-wide and App-specific viewer policies may allow exact verified emails or domains without changing the Artifact. Authentication and access policy are deployment-target concerns; application code always receives `ctx.user` as either a normalized verified identity with an `id` and optional `email`, `name`, and `thumbnail`, or `null`.
+Authentication and access policy belong to the deployment target, not `nosrv.yaml`. Application code always receives `ctx.user` as either a normalized verified identity with an `id` and optional `email`, `name`, and `thumbnail`, or `null`. A self-hosted Platform configured with local authentication or OIDC authenticates App requests and applies Platform-wide and App-specific access policies. Other deployment targets may supply identity through their own verified request integration.
 
 The intentionally verbose [`../examples/full-config/nosrv.yaml`](../examples/full-config/nosrv.yaml) is the runnable configuration reference. Do not copy every setting into an App; keep only values that differ from the defaults or select external resources.
 
@@ -298,7 +314,7 @@ Normally deploy directly; the deploy command performs its target-specific build 
 ```bash
 NOSRV_PLATFORM_URL="..." NOSRV_TOKEN="issued-personal-token" nosrv deploy
 nosrv deploy --target cloudflare
-nosrv deploy --target netlify --dry-run
+nosrv deploy --target azure --dry-run
 ```
 
 Use `nosrv build` and `nosrv run .nosrv/build` only when an Artifact must be inspected, verified, or tested explicitly. Do not edit generated Artifact files.

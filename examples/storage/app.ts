@@ -1,5 +1,5 @@
 import { defineApp } from "@nosrv/core";
-import { createRouter, limitBody } from "@nosrv/router";
+import { createRouter, limitBody } from "@nosrv/core";
 
 const requires = { storage: true } as const;
 const router = createRouter<typeof requires>();

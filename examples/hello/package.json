@@ -10,9 +10,9 @@
     "deploy": "nosrv deploy"
   },
   "dependencies": {
-    "@nosrv/adapter-cloudflare": "0.1.0",
-    "@nosrv/adapter-google-functions": "0.1.0",
-    "@nosrv/adapter-lambda": "0.1.0",
-    "@nosrv/core": "0.1.0"
+    "@nosrv/cloudflare": "^0.3.0",
+    "@nosrv/google-cloud": "^0.3.0",
+    "@nosrv/aws": "^0.3.0",
+    "@nosrv/core": "^0.3.0"
   }
 }

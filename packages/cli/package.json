@@ -1,6 +1,6 @@
 {
   "name": "nosrv",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "license": "Apache-2.0",
   "description": "CLI for developing, building, and deploying portable nosrv applications",
   "type": "module",
@@ -9,11 +9,36 @@
   },
   "files": [
     "bin",
+    "dist",
     "spec"
   ],
   "exports": {
     "./bin/nosrv.js": "./bin/nosrv.js",
-    "./spec/ai-spec.md": "./spec/ai-spec.md"
+    "./spec/ai-spec.md": "./spec/ai-spec.md",
+    "./runtime/filesystem": {
+      "types": "./dist/filesystem.d.ts",
+      "import": "./dist/filesystem.js"
+    },
+    "./runtime/memory": {
+      "types": "./dist/memory.d.ts",
+      "import": "./dist/memory.js"
+    },
+    "./runtime/mcp": {
+      "types": "./dist/mcp.d.ts",
+      "import": "./dist/mcp.js"
+    },
+    "./runtime/node": {
+      "types": "./dist/runtime-node.d.ts",
+      "import": "./dist/runtime-node.js"
+    },
+    "./runtime/sqlite": {
+      "types": "./dist/sqlite.d.ts",
+      "import": "./dist/sqlite.js"
+    },
+    "./runtime/static-files": {
+      "types": "./dist/static-files.d.ts",
+      "import": "./dist/static-files.js"
+    }
   },
   "repository": {
     "type": "git",
@@ -35,24 +60,13 @@
     "access": "public"
   },
   "dependencies": {
-    "@google-cloud/functions-framework": "^5.0.5",
-    "@nosrv/adapter-cloudflare": "0.1.0",
-    "@nosrv/adapter-google-functions": "0.1.0",
-    "@nosrv/adapter-lambda": "0.1.0",
-    "@nosrv/adapter-netlify": "0.1.0",
-    "@nosrv/core": "0.1.0",
-    "@nosrv/provider-filesystem": "0.1.0",
-    "@nosrv/provider-gcs": "0.1.0",
-    "@nosrv/provider-postgres": "0.1.0",
-    "@nosrv/provider-redis": "0.1.0",
-    "@nosrv/provider-s3": "0.1.0",
-    "@nosrv/provider-memory": "0.1.0",
-    "@nosrv/runtime-node": "0.1.0",
+    "@nosrv/core": "0.3.0",
+    "@nosrv/postgres": "0.3.0",
+    "@nosrv/redis": "0.3.0",
     "croner": "^9.1.0",
     "esbuild": "^0.25.0",
     "tar": "^7.4.3",
     "tsx": "^4.20.0",
-    "wrangler": "^4.111.0",
     "yaml": "^2.8.0"
   },
   "engines": {

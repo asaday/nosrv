@@ -5,7 +5,7 @@ app: ./app.ts
 route: /full-config
 
 meta:
-  description: Runnable reference for every nosrv.yaml option.
+  description: Runnable reference for representative nosrv.yaml options.
   icon: 🧩
 
 spa: false
@@ -25,15 +25,17 @@ dev:
 #   filesystem:
 #     read: [/srv/reports]
 #     write: []
+#   childProcess: true
 # Use permissions: "*" only for fully trusted administration Apps.
 
 # Ask the deployment target to authenticate requests before they reach the App.
-# auth:
-#   mode: required
 
 schedules:
   - name: daily-cleanup
     cron: "0 3 * * *"
+# Cloudflare and Azure deployment generate scheduler triggers. Remove schedules before
+# deploying this example to Google Functions or Lambda; their deploy commands do not yet
+# provision Cloud Scheduler or EventBridge resources.
 
 providers:
   node:
@@ -89,6 +91,21 @@ providers:
       # provider: gcs # Optional; the Google Functions default.
       bucket: full-config-storage
 
+  azure:
+    # db:
+    #   provider: postgres # Optional; the Azure Functions default.
+    #   urlEnv: DATABASE_URL
+    #   appId: full-config
+    kv:
+      # provider: cosmos # Optional; the Azure Functions default.
+      database: full-config
+      container: kv
+      # connectionStringEnv: AZURE_COSMOS_CONNECTION_STRING
+    storage:
+      # provider: azure-blob # Optional; the Azure Functions default.
+      container: full-config-storage
+      # connectionStringEnv: AZURE_STORAGE_CONNECTION_STRING
+
 deploy:
   google-functions:
     name: full-config
@@ -103,7 +120,8 @@ deploy:
     http:
       auth: aws-iam
 
-  netlify:
-    # Site ID is non-secret. Keep NETLIFY_AUTH_TOKEN outside this file.
-    site: your-netlify-site-id
-    prod: false
+  azure:
+    # Existing Function App. Authentication and provisioning stay with Azure tooling.
+    app: your-function-app
+    # slot: staging
+    authLevel: function

@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { cp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { basename, dirname, isAbsolute, relative, resolve, sep } from "node:path";
-import { isAppName, normalizeAppSchedules } from "@nosrv/core";
+import { isAppName, normalizeAppSchedules, normalizeAppTimezone } from "@nosrv/core";
 import { parse } from "yaml";
 
 export function projectName(directory) {
@@ -31,7 +31,7 @@ function validateProviderGroup(value, path, groups) {
   }
 }
 
-function validateConfigKeys(config) {
+export function validateConfig(config) {
   assertAllowedKeys(
     config,
     [
@@ -43,8 +43,8 @@ function validateConfigKeys(config) {
       "env",
       "dev",
       "permissions",
-      "auth",
       "schedules",
+      "timezone",
       "providers",
       "deploy",
     ],
@@ -52,7 +52,6 @@ function validateConfigKeys(config) {
   );
   if (config.meta !== undefined) assertAllowedKeys(config.meta, ["description", "icon"], "meta");
   if (config.dev !== undefined) assertAllowedKeys(config.dev, ["port", "host"], "dev");
-  if (config.auth !== undefined) assertAllowedKeys(config.auth, ["mode"], "auth");
   if (config.schedules !== undefined) {
     if (!Array.isArray(config.schedules)) throw new Error("schedules must be an array");
     config.schedules.forEach((schedule, index) =>
@@ -62,7 +61,7 @@ function validateConfigKeys(config) {
   if (config.providers !== undefined) {
     const providers = assertAllowedKeys(
       config.providers,
-      ["node", "cloudflare", "lambda", "google-functions"],
+      ["node", "cloudflare", "lambda", "google-functions", "azure"],
       "providers",
     );
     if (providers.node !== undefined)
@@ -89,11 +88,17 @@ function validateConfigKeys(config) {
         kv: ["provider", "collection"],
         storage: ["provider", "bucket"],
       });
+    if (providers.azure !== undefined)
+      validateProviderGroup(providers.azure, "providers.azure", {
+        db: ["provider", "urlEnv", "appId"],
+        kv: ["provider", "database", "container", "connectionStringEnv"],
+        storage: ["provider", "container", "connectionStringEnv"],
+      });
   }
   if (config.deploy !== undefined) {
     const deploy = assertAllowedKeys(
       config.deploy,
-      ["google-functions", "lambda", "netlify"],
+      ["google-functions", "lambda", "azure"],
       "deploy",
     );
     if (deploy["google-functions"] !== undefined)
@@ -110,8 +115,8 @@ function validateConfigKeys(config) {
       );
       if (lambda.http !== undefined) assertAllowedKeys(lambda.http, ["auth"], "deploy.lambda.http");
     }
-    if (deploy.netlify !== undefined)
-      assertAllowedKeys(deploy.netlify, ["prod", "site", "alias"], "deploy.netlify");
+    if (deploy.azure !== undefined)
+      assertAllowedKeys(deploy.azure, ["app", "slot", "authLevel"], "deploy.azure");
   }
 }
 
@@ -122,11 +127,12 @@ export async function loadConfig(cwd, options = {}) {
   if (!config || typeof config !== "object" || Array.isArray(config)) {
     throw new Error("nosrv.yaml must contain a YAML object");
   }
-  validateConfigKeys(config);
+  validateConfig(config);
   if (config.spa !== undefined && typeof config.spa !== "boolean") {
     throw new Error('"spa" in nosrv.yaml must be true or false');
   }
   resolveMeta(config.meta);
+  resolveTimezone(config.timezone);
   return config;
 }
 
@@ -175,6 +181,10 @@ export function resolveResourcesDirectory(cwd) {
 
 export function resolveSchedules(configuredSchedules) {
   return normalizeAppSchedules(configuredSchedules);
+}
+
+export function resolveTimezone(configuredTimezone) {
+  return normalizeAppTimezone(configuredTimezone);
 }
 
 export function resolvePermissions(configuredPermissions) {
@@ -257,18 +267,6 @@ export function resolveEnvironment(configuredEnvironment) {
     environment[name] = value;
   }
   return Object.keys(environment).length ? environment : undefined;
-}
-
-export function resolveAuth(configuredAuth) {
-  if (configuredAuth === undefined) return undefined;
-  if (!configuredAuth || typeof configuredAuth !== "object" || Array.isArray(configuredAuth)) {
-    throw new Error('"auth" in nosrv.yaml must be an object');
-  }
-  const mode = configuredAuth.mode;
-  if (mode !== "optional" && mode !== "required") {
-    throw new Error('"auth.mode" in nosrv.yaml must be "optional" or "required"');
-  }
-  return { mode };
 }
 
 export function resolveMeta(configuredMeta) {

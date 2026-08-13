@@ -53,7 +53,7 @@ schedules:
     cron: "0 3 * * *"
 ```
 
-Schedules use five-field UTC cron expressions. They are not durable queues and may be duplicated or missed while a Node App is stopped.
+Schedules use five-field cron expressions. A top-level IANA `timezone` applies to all schedules; when omitted, Node.js and Platform use runtime local time. They are not durable queues and may be duplicated or missed while a Node App is stopped.
 
 ## Static assets and private resources
 
@@ -64,8 +64,8 @@ Schedules use five-field UTC cron expressions. They are not durable queues and m
 ## Deployment choices
 
 - `nosrv deploy` targets the self-hosted nosrv Platform by default. Interactive deployment uses a saved browser login; CI may pass an issued personal token through `NOSRV_TOKEN`.
-- Use `nosrv deploy --target cloudflare`, `lambda`, `google-functions`, or `netlify` for supported public targets.
-- Public-cloud deployment generates entrypoints and target configuration, then delegates authentication, upload, and cloud state to Wrangler, AWS SAM, `gcloud`, or Netlify CLI.
+- Use `nosrv deploy --target cloudflare`, `lambda`, `google-functions`, or `azure` for supported public targets.
+- Public-cloud deployment generates entrypoints and target configuration, then delegates authentication, upload, and cloud state to Wrangler, AWS SAM, `gcloud`, or Azure Functions Core Tools.
 - Cloud database, KV, storage, IAM, secrets, and schedule resources may require explicit provider-side setup. Do not claim nosrv provisions every resource.
 
 ## Self-hosted security boundary

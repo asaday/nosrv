@@ -3,7 +3,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import test from "node:test";
-import { SQLiteDatabase, SQLiteKV } from "@nosrv/provider-sqlite";
+import { SQLiteDatabase, SQLiteKV } from "nosrv/runtime/sqlite";
 
 test("SQLiteDatabase executes parameterized statements and returns rows", async () => {
   const db = new SQLiteDatabase(":memory:");

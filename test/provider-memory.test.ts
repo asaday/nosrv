@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { MemoryObjectStorage } from "@nosrv/provider-memory";
+import { MemoryObjectStorage } from "nosrv/runtime/memory";
 
 test("memory object storage supports put, get, head, list, and delete", async () => {
   const storage = new MemoryObjectStorage();

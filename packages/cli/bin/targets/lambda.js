@@ -17,6 +17,7 @@ import {
   writeStaticApp,
 } from "../project.js";
 import { registerTypeScript } from "../register-typescript.js";
+import { resolveCloudPackage, resolvePostgresPackage } from "./packages.js";
 import { bundleDeployment } from "./shared.js";
 
 async function generateLambdaDeployment(cwd, appPath, config) {
@@ -36,6 +37,8 @@ async function generateLambdaDeployment(cwd, appPath, config) {
     await copyPublicDirectory(resourcesDirectory, resolve(output, "resources"));
   const provider = config.providers?.lambda ?? {};
   const postgres = postgresDatabaseConfig(cwd, config, "lambda");
+  const awsPackage = resolveCloudPackage(cwd, "lambda");
+  const postgresPackage = postgres ? resolvePostgresPackage(cwd, "AWS Lambda") : null;
   if (provider.storage && (provider.storage.provider ?? "s3") !== "s3")
     throw new Error(`Unsupported Lambda storage provider: ${provider.storage.provider}`);
   if (provider.kv && (provider.kv.provider ?? "dynamodb") !== "dynamodb")
@@ -63,9 +66,9 @@ async function generateLambdaDeployment(cwd, appPath, config) {
     .filter(Boolean)
     .join(", ");
   const require = createRequire(import.meta.url);
-  const adapterPath = require.resolve("@nosrv/adapter-lambda");
-  const resourceProviderPath = require.resolve("@nosrv/provider-filesystem");
-  const postgresProviderPath = require.resolve("@nosrv/provider-postgres");
+  const adapterPath = awsPackage.entryPath;
+  const resourceProviderPath = resolve(import.meta.dirname, "../../dist/filesystem.js");
+  const postgresProviderPath = postgresPackage?.entryPath;
   const entry = `import { createLambdaHandler } from ${JSON.stringify(adapterPath)};
 import { FilesystemResources } from ${JSON.stringify(resourceProviderPath)};
 ${postgres ? `import { PostgresDatabase } from ${JSON.stringify(postgresProviderPath)};` : ""}
@@ -174,8 +177,11 @@ export async function runLambdaDev(cwd, appPath, config, { hostname, port }) {
   const app = module.default?.fetch ? module.default : module.default?.default;
   if (!app || typeof app.fetch !== "function")
     throw new Error(`${resolvedAppPath} must default-export an app created with defineApp()`);
-  const { createLambdaHandler } = await import("@nosrv/adapter-lambda");
-  const { FilesystemResources } = await import("@nosrv/provider-filesystem");
+  const awsPackage = resolveCloudPackage(cwd, "lambda");
+  const { createLambdaHandler } = await import(pathToFileURL(awsPackage.entryPath).href);
+  const { FilesystemResources } = await import(
+    pathToFileURL(resolve(import.meta.dirname, "../../dist/filesystem.js")).href
+  );
   const resourcesDirectory = resolveResourcesDirectory(cwd);
   const provider = config.providers?.lambda ?? {};
   const postgres = postgresDatabaseConfig(cwd, config, "lambda");
@@ -187,16 +193,18 @@ export async function runLambdaDev(cwd, appPath, config, { hostname, port }) {
     throw new Error("Lambda S3 storage requires a bucket name");
   if (provider.kv && !provider.kv.table)
     throw new Error("Lambda DynamoDB KV requires a table name");
-  const database = postgres
-    ? new (await import("@nosrv/provider-postgres")).PostgresDatabase(
-        (() => {
-          const value = process.env[postgres.urlEnv];
-          if (!value) throw new Error(`PostgreSQL database requires ${postgres.urlEnv}`);
-          return value;
-        })(),
-        postgres.appId,
-      )
-    : undefined;
+  const postgresPackage = postgres ? resolvePostgresPackage(cwd, "AWS Lambda") : null;
+  const database =
+    postgres && postgresPackage
+      ? new (await import(pathToFileURL(postgresPackage.entryPath).href)).PostgresDatabase(
+          (() => {
+            const value = process.env[postgres.urlEnv];
+            if (!value) throw new Error(`PostgreSQL database requires ${postgres.urlEnv}`);
+            return value;
+          })(),
+          postgres.appId,
+        )
+      : undefined;
   const handler = createLambdaHandler(app, {
     ...(provider.storage ? { s3Bucket: provider.storage.bucket } : {}),
     ...(provider.kv ? { dynamodbTable: provider.kv.table } : {}),

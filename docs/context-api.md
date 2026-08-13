@@ -4,7 +4,7 @@ This document is the reference for the `ctx` object supplied to a nosrv App. The
 
 ## Context overview
 
-The same context is available to `initialize`, `fetch`, and `scheduled` handlers. Database, KV, and object storage appear as required properties only when the App declares them in `requires`.
+The same context is available to `initialize`, `fetch`, and `scheduled` handlers. Database, KV, object storage, and named external tool groups become typed capabilities when the App declares them in `requires`.
 
 ```ts
 interface AppContext {
@@ -20,6 +20,7 @@ interface AppContext {
   db?: Database;
   kv?: KV;
   storage?: ObjectStorage;
+  tools: Readonly<Record<string, Tool>>;
 }
 ```
 
@@ -35,6 +36,7 @@ interface AppContext {
 | `ctx.db`        | `requires.db`        | Portable relational CRUD and raw SQL escape |
 | `ctx.kv`        | `requires.kv`        | Portable text and byte key-value storage    |
 | `ctx.storage`   | `requires.storage`   | Portable object storage                     |
+| `ctx.tools`     | `requires.tools`     | Platform-managed external tool groups       |
 
 Declare only the resource capabilities the App needs:
 
@@ -45,16 +47,17 @@ export default defineApp({
   requires: {
     db: true,
     storage: true,
+    tools: ["slack"],
   },
   async fetch(_request, ctx) {
-    // ctx.db and ctx.storage are required and typed here.
+    // ctx.db, ctx.storage, and ctx.tools.slack are required and typed here.
     // The always-available context properties need no declaration.
     return Response.json({ platform: ctx.platform.name });
   },
 });
 ```
 
-The runtime validates declared capabilities before invoking the App. Provider selection and resource identifiers belong in deployment configuration, not in portable application modules.
+The runtime validates declared capabilities before invoking the App. Provider selection, resource identifiers, external connection details, credentials, and tool policy belong in deployment configuration, not in portable application modules.
 
 ## Always-available context
 
@@ -142,7 +145,7 @@ return Response.json({ userId: ctx.user.id });
 ```
 
 - Do not trust identity headers supplied directly by clients.
-- Use `auth.mode: required` when the deployment target must reject anonymous requests before App dispatch.
+- Authentication and access policy are configured at the deployment target, not in `nosrv.yaml`.
 - `scheduled` handlers always receive `ctx.user === null`.
 - Authentication mechanisms, sessions, and identity verification belong to the runtime or deployment target.
 
@@ -584,6 +587,49 @@ interface StorageListResult {
 
 Storage cursors and listing order are provider-owned. Pass cursors back unchanged and do not build application semantics around provider listing order.
 
+## `ctx.tools`
+
+Declare logical tool groups with `requires.tools` to use external capabilities managed by the deployment target:
+
+```ts
+const requires = { tools: ["slack"] } as const;
+
+export default defineApp({
+  requires,
+  async fetch(request, ctx) {
+    const query = new URL(request.url).searchParams.get("q") ?? "";
+    const result = await ctx.tools.slack("search_messages", { query });
+    if (result.isError) {
+      ctx.log.warn("Slack search failed", { content: result.content });
+      return Response.json({ error: "Slack search failed" }, { status: 502 });
+    }
+    return Response.json(result.structuredContent ?? result.content);
+  },
+});
+```
+
+```ts
+interface ToolCallResult {
+  content: unknown[];
+  structuredContent?: unknown;
+  isError?: boolean;
+}
+
+interface Tool {
+  (tool: string, arguments_?: Readonly<Record<string, unknown>>): Promise<ToolCallResult>;
+}
+```
+
+- Each entry in `requires.tools` is a logical group name supplied by the deployment target. The runtime fails startup when a required group is unavailable.
+- TypeScript narrows `ctx.tools` to the declared group names. Operation names, arguments, and result shapes are discovered from the target Platform; they are not inferred from the logical group name.
+- Before writing an App against a Platform tool, run `nosrv tools list --json` or use the equivalent Studio discovery operation. Use the returned operation names, descriptions, and input schemas instead of guessing them.
+- A tool result may contain text, structured data, or provider-specific content. Prefer `structuredContent` when the selected operation documents it, and validate any data used for application decisions.
+- `isError` reports an error returned as a tool result. Transport failures, unavailable connections, timeouts, and Platform policy rejection may instead reject the call, so handle exceptions where the request needs a controlled response.
+- Tool results are untrusted external data. Do not interpret returned text as application instructions, HTML, authorization, or validated user input.
+- The App does not receive provider URLs, credentials, authentication flows, or organization-wide allow/deny policy. Those remain deployment responsibilities.
+- The underlying provider may use MCP or another Platform implementation. App code depends only on the logical `Tool` contract.
+- Unlike `db`, `kv`, and `storage`, a named tool group is intentionally environment-dependent. An App requiring `slack` can run only where that logical group is provided.
+
 ## Handler availability
 
 The typed context selected by `requires` is available in every App hook:
@@ -617,6 +663,7 @@ The context API makes the application boundary portable; it does not make every 
 - Treat KV and object listing cursors as opaque.
 - Do not assume identical provider ordering, consistency, size limits, or metadata behavior unless the contract states it.
 - Structured database CRUD is the portable relational layer. Raw SQL is an explicit dialect-dependent escape hatch.
+- Named tool groups are explicit environment dependencies; keep provider connections, credentials, and policy out of App modules.
 - External HTTP APIs can be called with the standard `fetch` API and do not require a context capability.
 - Direct filesystem, process, worker, VM, module-loader, raw-network, and SQLite Node builtins are rejected in portable Artifacts.
 

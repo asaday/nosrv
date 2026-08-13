@@ -1,3 +1,4 @@
+timezone: UTC
 schedules:
   - name: every-five-minutes
     cron: "*/5 * * * *"

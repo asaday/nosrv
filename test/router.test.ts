@@ -8,7 +8,7 @@ import {
   readForm,
   readJson,
   serializeCookie,
-} from "@nosrv/router";
+} from "@nosrv/core";
 import type { AppContext } from "@nosrv/core";
 import { defineApp, MemoryResources } from "@nosrv/core";
 
@@ -24,6 +24,7 @@ const context: AppContext = {
   user: null,
   waitUntil() {},
   resources: new MemoryResources(),
+  tools: Object.freeze({}),
 };
 
 test("router matches methods and decoded path params", async () => {

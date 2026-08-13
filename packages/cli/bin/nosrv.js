@@ -3,7 +3,7 @@
 import { existsSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, relative, resolve, sep } from "node:path";
-import { fileURLToPath } from "node:url";
+import packageManifest from "../package.json" with { type: "json" };
 import { loadConfig, projectName, resolveApp, resolvePermissions } from "./project.js";
 import {
   deployPlatform,
@@ -18,20 +18,21 @@ import { dev } from "./dev-node.js";
 import { runWranglerDeploy } from "./targets/cloudflare.js";
 import { runGoogleDeploy } from "./targets/google-functions.js";
 import { runLambdaDeploy } from "./targets/lambda.js";
-import { runNetlifyDeploy } from "./targets/netlify.js";
+import { runAzureDeploy } from "./targets/azure.js";
 
-const usage = `nosrv v0.1.0
+const usage = `nosrv v${packageManifest.version}
 
 Usage:
   nosrv create <directory> [--template <basic|react>]
   nosrv studio import <directory> [--mode <copy|link>] [--name <name>]
   nosrv build [--output <directory>]
-  nosrv run <artifact-directory> [--port <number>] [--host <hostname>]
+  nosrv run <artifact-directory> [--port <number>] [--host <hostname>] [--disable-schedules]
   nosrv dev [--target <node|cloudflare|google-functions|lambda>] [--port <number>] [--host <hostname>]
-  nosrv deploy [--target <platform|cloudflare|google-functions|lambda|netlify>] [target options]
+  nosrv deploy [--target <platform|cloudflare|google-functions|lambda|azure>] [target options]
   nosrv login [--url <platform-url>] [--header <name:value>...]
   nosrv whoami
   nosrv logout
+  nosrv tools list [--json]
   nosrv link <platform-path>
   nosrv list [--json]
   nosrv info [name-or-id] [--json]
@@ -54,19 +55,17 @@ async function createProject(directoryArgument, template = "basic") {
   if (template !== "basic" && template !== "react")
     throw new Error(`Unknown template: ${template}`);
   const directory = resolve(process.cwd(), directoryArgument);
-  const cliPath = fileURLToPath(import.meta.url);
-  const checkoutRoot = resolve(dirname(cliPath), "../../..");
+  const checkoutRoot = resolve(import.meta.dirname, "../../..");
   const checkoutCore = resolve(checkoutRoot, "packages/core");
   const usesCheckout = existsSync(resolve(checkoutCore, "package.json"));
   const coreDependency = usesCheckout
     ? `file:${relative(directory, checkoutCore).split(sep).join("/")}`
-    : "^0.1.0";
-  const localCliCommand = (command) => `node ${JSON.stringify(cliPath)} ${command}`;
+    : `^${packageManifest.version}`;
   const scripts = {
-    dev: usesCheckout ? localCliCommand("dev") : "nosrv dev",
-    deploy: usesCheckout ? localCliCommand("deploy") : "nosrv deploy",
+    dev: "npx nosrv dev",
+    deploy: "npx nosrv deploy",
   };
-  const agentInstructions = `# nosrv application\n\n- Use Web Standard Request and Response.\n- Export the application with defineApp().\n- Declare required database, KV, and storage capabilities and access them through ctx.\n- Use runtime-provided ctx.env, ctx.secrets, ctx.resources, and ctx.user without declaring them.\n- Put immutable private files under resources/ and read them with ctx.resources; use public/ only for browser-visible assets.\n- Do not import cloud-provider SDKs into portable application code.\n- Keep backend routes under /api when serving a frontend.\n- Use relative browser URLs such as ./app.js and api/items so Platform route prefixes keep working.\n- Validate request data at runtime.\n- For cron work, export scheduled(event, ctx), declare five-field UTC schedules in nosrv.yaml, and keep the work short and idempotent.\n- Default to plain HTML, CSS, and JavaScript unless UI complexity justifies a framework.\n- Run the application with nosrv dev and verify important success and error responses.\n- Deploy with nosrv deploy for Platform or nosrv deploy --target cloudflare. Keep non-development Platform tokens in NOSRV_TOKEN, not nosrv.yaml. Lambda and Google deployment are not automated yet.\n`;
+  const agentInstructions = `# nosrv application\n\n- Use Web Standard Request and Response.\n- Export the application with defineApp().\n- Declare required database, KV, and storage capabilities and access them through ctx.\n- Use runtime-provided ctx.env, ctx.secrets, ctx.resources, and ctx.user without declaring them.\n- Before implementing Slack, Google Drive, Salesforce, or internal-service access, run \`npx nosrv tools list --json\` against the target Platform. Use only the returned logical group names, operation names, descriptions, and input schemas; do not guess them. Declare selected groups in \`requires.tools\` and call them through \`ctx.tools.<group>(operation, arguments)\`.\n- Put immutable private files under resources/ and read them with ctx.resources; use public/ only for browser-visible assets.\n- Do not import cloud-provider SDKs into portable application code.\n- Keep backend routes under /api when serving a frontend.\n- Use relative browser URLs such as ./app.js and api/items so Platform route prefixes keep working.\n- Validate request data at runtime.\n- For cron work, export scheduled(event, ctx), declare five-field schedules in nosrv.yaml, add a top-level IANA timezone when required, and keep the work short and idempotent. Cloudflare and Azure deployment generate scheduler triggers with target-specific timezone limits; Google and Lambda deployment do not yet provision scheduler resources.\n- Default to plain HTML, CSS, and JavaScript unless UI complexity justifies a framework.\n- Run the application with nosrv dev and verify important success and error responses.\n- Deploy to Platform with nosrv deploy, or select Cloudflare, Google Functions, Lambda, or Azure Functions with nosrv deploy --target <target>. Keep non-development Platform tokens in NOSRV_TOKEN, not nosrv.yaml.\n`;
   const basicFiles = {
     "src/app.ts": `import { defineApp } from "@nosrv/core";\n\nexport default defineApp({\n  async fetch(request) {\n    const { pathname } = new URL(request.url);\n    if (pathname === "/api/hello") {\n      return Response.json({ message: "Hello from nosrv!" });\n    }\n    return Response.json({ error: "Not found" }, { status: 404 });\n  },\n});\n`,
     "public/index.html": `<!doctype html>\n<html lang="en">\n<head>\n  <meta charset="utf-8">\n  <meta name="viewport" content="width=device-width">\n  <title>nosrv App</title>\n  <link rel="stylesheet" href="./style.css">\n</head>\n<body>\n  <main>\n    <h1>nosrv</h1>\n    <p id="message">Loading...</p>\n  </main>\n  <script type="module" src="./app.js"></script>\n</body>\n</html>\n`,
@@ -79,6 +78,7 @@ async function createProject(directoryArgument, template = "basic") {
         type: "module",
         scripts,
         dependencies: { "@nosrv/core": coreDependency },
+        engines: { node: ">=24" },
       },
       null,
       2,
@@ -100,7 +100,10 @@ async function createProject(directoryArgument, template = "basic") {
         type: "module",
         scripts: { ...scripts, "dev:web": "vite", build: "vite build" },
         dependencies: { "@nosrv/core": coreDependency, react: "^19.2.0", "react-dom": "^19.2.0" },
-        devDependencies: { "@vitejs/plugin-react": "^6.0.3", vite: "^8.1.5" },
+        devDependencies: {
+          "@vitejs/plugin-react": "^6.0.3",
+          vite: "^8.1.5",
+        },
         engines: { node: ">=24" },
       },
       null,
@@ -157,7 +160,7 @@ function deploymentTargetLabel(target) {
     cloudflare: "Cloudflare Workers",
     "google-functions": "Google Cloud Functions",
     lambda: "AWS Lambda",
-    netlify: "Netlify Functions",
+    azure: "Azure Functions",
   };
   return labels[target] ?? target;
 }
@@ -188,13 +191,13 @@ async function deploy(args) {
     await runLambdaDeploy(cwd, appPath, config, args);
     return;
   }
-  if (target === "netlify") {
-    await runNetlifyDeploy(cwd, appPath, config, args);
+  if (target === "azure") {
+    await runAzureDeploy(cwd, appPath, config, args);
     return;
   }
   if (target !== "cloudflare") {
     throw new Error(
-      `Unsupported deployment target: ${target}. Currently supported: cloudflare, platform, google-functions, lambda, netlify`,
+      `Unsupported deployment target: ${target}. Currently supported: cloudflare, platform, google-functions, lambda, azure`,
     );
   }
   await runWranglerDeploy(cwd, appPath, config, args);
@@ -241,6 +244,7 @@ async function main() {
   if (
     [
       "link",
+      "tools",
       "list",
       "info",
       "start",

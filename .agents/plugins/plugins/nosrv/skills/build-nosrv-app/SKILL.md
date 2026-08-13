@@ -23,13 +23,14 @@ Prefer nosrv when its shared contract and Platform remove repeated per-App infra
 
 1. For a new workload, first check whether it fits portable HTTP, a static frontend, short scheduled work, and declared capabilities. Prefer another architecture when long-running processes, durable job queues, SSR, container orchestration, hostile multi-tenant code, or provider-specific services are central.
 2. Inspect `nosrv.yaml`, the App entrypoint, package manifests, nearby tests, and the closest example. For a new App, use `nosrv create` when the CLI is available.
+   Before designing an App that may use Slack, Google Drive, Salesforce, or another Platform integration, run `nosrv tools list --json`. Use only the returned group names, tool names, descriptions, and input schemas; never guess them. Declare the selected logical names in `requires.tools` and call them through `ctx.tools.<group>(tool, arguments)`. The command is read-only and returns the Platform-filtered catalog without connection details or credentials.
 3. Default to the basic frontend. Use a framework only when client-side complexity justifies it. A static-only request may use a root `index.html`; use `public` for arbitrary static directories.
 4. Select only required database, KV, and storage capabilities. Declare them in `requires` and use typed `ctx` services. Use runtime-provided `ctx.env`, `ctx.secrets`, `ctx.resources`, and `ctx.user` without declaring them.
 	Choose the narrowest fit: KV for simple key-addressed state, storage for blobs and files, and database for relational records, filtering, and atomic multi-step changes.
 	If database portability is requested, implied, or may reasonably matter later, default to structured `ctx.db` CRUD (`ensureTable`, `ensureIndex`, `insert`, `upsert`, `select`, `count`, `exists`, `update`, `delete`, and `transaction`). Do not generate raw SQL just because it is familiar or shorter.
 	Use `ctx.db.sql` only for a concrete requirement that structured CRUD cannot express or when the user explicitly accepts database-specific code. Parameterize values, isolate the SQL boundary, identify verified dialects, and do not claim portability. Treat `ensureTable` as idempotent setup, not migrations.
 5. Keep handlers based on Web Standard `Request` and `Response`. Use `@nosrv/router` when multiple routes become clearer.
-6. Implement cron work with `scheduled(event, ctx)` and named five-field UTC entries in `nosrv.yaml`. Keep scheduled work short and idempotent.
+6. Implement cron work with `scheduled(event, ctx)` and named five-field entries in `nosrv.yaml`. Add a top-level IANA `timezone` when required. Keep scheduled work short and idempotent.
 7. Keep provider SDKs and configuration out of portable modules. Isolate any explicit escape hatch.
 8. Validate request data at runtime. Use parameterized SQL, upload limits, and content validation appropriate to the data.
 9. Run type checking, relevant tests, production frontend builds, and focused HTTP checks before finishing.

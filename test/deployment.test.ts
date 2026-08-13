@@ -3,9 +3,9 @@ import { execFile } from "node:child_process";
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
-import { pathToFileURL } from "node:url";
 import test from "node:test";
 import { promisify } from "node:util";
+import { resolvePostgresPackage } from "../packages/cli/bin/targets/packages.js";
 
 const exec = promisify(execFile);
 const cli = resolve("packages/cli/bin/nosrv.js");
@@ -34,6 +34,25 @@ test("embeds private resources in the Cloudflare Worker bundle input", async () 
     assert.match(worker, /MemoryResources/);
     assert.match(worker, /cHJpdmF0ZS1yZXNvdXJjZQ==/);
     assert.doesNotMatch(worker, /private-resource/);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("rejects an App timezone unsupported by Cloudflare Cron Triggers", async () => {
+  const directory = await fixture();
+  try {
+    await writeFile(
+      resolve(directory, "nosrv.yaml"),
+      "app: ./src/app.ts\ntimezone: Asia/Tokyo\nschedules:\n  - name: cleanup\n    cron: '0 3 * * *'\n",
+      "utf8",
+    );
+    await assert.rejects(
+      exec(process.execPath, [cli, "deploy", "--target", "cloudflare", "--dry-run"], {
+        cwd: directory,
+      }),
+      /Cloudflare Cron Triggers do not support App timezone Asia\/Tokyo/,
+    );
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
@@ -155,7 +174,7 @@ test("rejects an explicitly unsupported cloud provider", async () => {
   }
 });
 
-test("generates a Netlify Functions staging project with static assets", async () => {
+test("generates an Azure Functions staging project with assets and timers", async () => {
   const directory = await fixture();
   try {
     await mkdir(resolve(directory, "public"));
@@ -164,42 +183,61 @@ test("generates a Netlify Functions staging project with static assets", async (
       "<!doctype html><title>nosrv</title>\n",
       "utf8",
     );
-    await exec(process.execPath, [cli, "deploy", "--target", "netlify", "--dry-run"], {
+    await writeFile(
+      resolve(directory, "nosrv.yaml"),
+      "app: ./src/app.ts\nschedules:\n  - name: cleanup\n    cron: '*/5 * * * *'\n",
+      "utf8",
+    );
+    await exec(process.execPath, [cli, "deploy", "--target", "azure", "--dry-run"], {
       cwd: directory,
     });
-    const output = resolve(directory, ".nosrv/netlify/deploy");
-    const functionPath = resolve(output, "functions/nosrv.mjs");
-    assert.match(await readFile(functionPath, "utf8"), /createNetlifyHandler/);
-    const generated = await import(`${pathToFileURL(functionPath).href}?test=${Date.now()}`);
-    const response = await generated.default(
-      new Request("https://example.netlify.app/api/check"),
-      {},
-    );
-    assert.deepEqual(await response.json(), { ok: true, resource: "private-resource" });
+    const output = resolve(directory, ".nosrv/azure/deploy");
+    const entry = await readFile(resolve(output, "index.mjs"), "utf8");
+    assert.match(entry, /createAzureHttpHandler/);
+    assert.match(entry, /createAzureTimerHandler/);
+    assert.match(entry, /0 \*\/5 \* \* \* \*/);
     assert.match(await readFile(resolve(output, "public/index.html"), "utf8"), /nosrv/);
-    const config = await readFile(resolve(output, "netlify.toml"), "utf8");
-    assert.match(config, /functions = "functions"/);
-    assert.match(config, /\.netlify\/functions\/nosrv/);
+    assert.match(await readFile(resolve(output, "host.json"), "utf8"), /routePrefix/);
+    const pkg = JSON.parse(await readFile(resolve(output, "package.json"), "utf8"));
+    assert.equal(pkg.dependencies["@azure/functions"], "^4.7.0");
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
 });
 
-test("generates a handler-free Netlify static deployment", async () => {
-  const directory = await mkdtemp(resolve(tmpdir(), "nosrv-netlify-static-"));
+test("rejects an App timezone not controlled by Azure deployment", async () => {
+  const directory = await fixture();
+  try {
+    await writeFile(
+      resolve(directory, "nosrv.yaml"),
+      "app: ./src/app.ts\ntimezone: Asia/Tokyo\nschedules:\n  - name: cleanup\n    cron: '0 3 * * *'\n",
+      "utf8",
+    );
+    await assert.rejects(
+      exec(process.execPath, [cli, "deploy", "--target", "azure", "--dry-run"], {
+        cwd: directory,
+      }),
+      /Azure Timer timezone is controlled by the Function App host/,
+    );
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("generates a handler-free Azure static deployment", async () => {
+  const directory = await mkdtemp(resolve(tmpdir(), "nosrv-azure-static-"));
   try {
     await writeFile(
       resolve(directory, "index.html"),
       "<!doctype html><title>static</title>\n",
       "utf8",
     );
-    await exec(process.execPath, [cli, "deploy", "--target", "netlify", "--dry-run"], {
+    await exec(process.execPath, [cli, "deploy", "--target", "azure", "--dry-run"], {
       cwd: directory,
     });
-    const output = resolve(directory, ".nosrv/netlify/deploy");
+    const output = resolve(directory, ".nosrv/azure/deploy");
     assert.match(await readFile(resolve(output, "public/index.html"), "utf8"), /static/);
-    const config = await readFile(resolve(output, "netlify.toml"), "utf8");
-    assert.doesNotMatch(config, /\[\[redirects\]\]/);
+    assert.match(await readFile(resolve(output, "index.mjs"), "utf8"), /Not found/);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
@@ -214,12 +252,70 @@ test("rejects Apps with host permissions for public-cloud deployment targets", a
       "utf8",
     );
     await assert.rejects(
-      exec(process.execPath, [cli, "deploy", "--target", "netlify", "--dry-run"], {
+      exec(process.execPath, [cli, "deploy", "--target", "azure", "--dry-run"], {
         cwd: directory,
       }),
       /Apps with host permissions can only deploy to nosrv Platform/,
     );
   } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("reports missing cloud integration packages with install guidance", async () => {
+  const directory = await fixture();
+  const cases = [
+    {
+      target: "cloudflare",
+      packageName: "@nosrv/cloudflare",
+      args: ["deploy", "--target", "cloudflare", "--dry-run"],
+    },
+    {
+      target: "google-functions",
+      packageName: "@nosrv/google-cloud",
+      args: ["deploy", "--target", "google-functions", "--region", "asia-northeast1", "--dry-run"],
+    },
+    {
+      target: "lambda",
+      packageName: "@nosrv/aws",
+      args: ["deploy", "--target", "lambda", "--dry-run"],
+    },
+    {
+      target: "azure",
+      packageName: "@nosrv/azure",
+      args: ["deploy", "--target", "azure", "--dry-run"],
+    },
+  ];
+  try {
+    for (const item of cases) {
+      await assert.rejects(
+        exec(process.execPath, [cli, ...item.args], {
+          cwd: directory,
+          env: { ...process.env, NOSRV_DISABLE_CHECKOUT_FALLBACK: "1" },
+        }),
+        new RegExp(
+          `Install it in the application with:[\\s\\S]*npm install -D ${item.packageName.replace("/", "\\/")}`,
+        ),
+        `expected install guidance for ${item.target}`,
+      );
+    }
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("reports missing PostgreSQL provider guidance", async () => {
+  const directory = await fixture();
+  const original = process.env.NOSRV_DISABLE_CHECKOUT_FALLBACK;
+  process.env.NOSRV_DISABLE_CHECKOUT_FALLBACK = "1";
+  try {
+    assert.throws(
+      () => resolvePostgresPackage(directory, "Google Functions"),
+      /npm install -D @nosrv\/postgres/,
+    );
+  } finally {
+    if (original === undefined) delete process.env.NOSRV_DISABLE_CHECKOUT_FALLBACK;
+    else process.env.NOSRV_DISABLE_CHECKOUT_FALLBACK = original;
     await rm(directory, { recursive: true, force: true });
   }
 });

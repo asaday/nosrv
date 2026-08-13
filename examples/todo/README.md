@@ -1,6 +1,6 @@
 # Todo App example
 
-A small full-stack App with a plain HTML frontend, `@nosrv/router`, runtime input validation, and portable relational CRUD. The same application operations and schema run on SQLite, D1, and PostgreSQL without handwritten SQL.
+A small full-stack App with the Router API from `@nosrv/core`, runtime input validation, and portable relational CRUD. The same application operations and schema run on SQLite, D1, and PostgreSQL without handwritten SQL.
 
 ```bash
 npm run dev

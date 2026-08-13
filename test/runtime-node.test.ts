@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 import { defineApp, MemoryResources } from "@nosrv/core";
-import { createScheduledRunner, listen } from "@nosrv/runtime-node";
+import { createScheduledRunner, listen } from "nosrv/runtime/node";
 import type { Server } from "node:http";
 
 let server: Server;

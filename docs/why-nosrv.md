@@ -16,6 +16,26 @@ AI therefore changes the scale of the problem. When Apps become inexpensive to c
 
 > AI can create an App. nosrv gives it a prepared, managed place to live.
 
+## Small is an operational boundary, not a small business outcome
+
+Business work is rarely one indivisible application. Intake, review, approval, records, search, reporting, notifications, and integration often change at different rates and have different users, owners, data, and permissions. Forcing every variation into one large application can make a local change depend on a system-wide release; leaving every variation as an unrelated script creates the opposite problem of fragmented operations.
+
+In nosrv, a small App is a focused unit that can be understood, owned, deployed, updated, and stopped independently. Several Apps may support one larger business workflow, while systems of record continue to own shared authoritative data and core transactions.
+
+```text
+System of record
+       ↓ authoritative data and core transactions
+Focused Apps
+       ↓ intake, review, search, transformation, notification
+nosrv Platform
+       ↓ shared runtime, identity, capabilities, and lifecycle
+People doing the work
+```
+
+Splitting a workflow does not make integration automatic. Cross-App contracts, the authoritative source for each record, identity propagation, authorization, retries, consistency, and failure recovery still need explicit design. nosrv provides clear App and operational boundaries; it does not pretend that distributed business logic is free.
+
+> Build Apps small. Operate them as one.
+
 ## Write what makes the App unique
 
 A nosrv App concentrates on its own behavior:

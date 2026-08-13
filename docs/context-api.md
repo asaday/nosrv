@@ -405,12 +405,21 @@ const anyFailed = await ctx.db.exists("reports", { where: { status: "failed" } }
 
 ### `update()` and `delete()`
 
-Portable mutations require a non-empty structured `where` object.
+Portable mutations require a non-empty structured `where` object. They return a
+`DatabaseExecuteResult` object whose `rowsAffected` value is the number of matched rows; the result
+object is not a boolean. A missing row produces `{ rowsAffected: 0 }`, which is still truthy in
+JavaScript.
 
 ```ts
-await ctx.db.update("reports", { title: "Updated" }, { where: { id: reportId } });
-await ctx.db.delete("reports", { where: { id: reportId } });
+const result = await ctx.db.update("reports", { title: "Updated" }, { where: { id: reportId } });
+if (result.rowsAffected === 0) {
+  return Response.json({ error: "not found" }, { status: 404 });
+}
 ```
+
+Use the same `rowsAffected` check for `delete()`. Do not run a separate `select()` only to check
+existence before updating or deleting: it adds a query and another operation can change the row
+between the check and the mutation.
 
 Table and column identifiers are validated. Values remain parameterized rather than interpolated into SQL.
 

@@ -24,6 +24,8 @@ test("bundled AI specification directs agents to discover Platform tools", async
   assert.match(specification, /nosrv tools list --json/);
   assert.match(specification, /requires\.tools/);
   assert.match(specification, /ctx\.tools\.drive/);
+  assert.match(specification, /result\.rowsAffected === 0/);
+  assert.match(specification, /do not test the result object itself for truthiness/i);
 });
 
 test("nosrv.yaml rejects App-level authentication settings", () => {

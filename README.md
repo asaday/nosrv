@@ -4,6 +4,8 @@
 
 AI makes application code inexpensive to create. It does not make each App's runtime, persistent data, secrets, identity, integrations, permissions, logs, updates, rollback, ownership, and eventual removal disappear. As more small Apps are created, those surrounding responsibilities multiply with them.
 
+"Small" describes an operational boundary, not the importance or total reach of the business process. A focused App has a clear responsibility, owner, data and capability needs, and independent lifecycle. A larger workflow can be supported by several such Apps around systems of record, while the Platform keeps their operations from fragmenting with them.
+
 nosrv lets a person or AI write what makes an App unique while a receiving Platform provides the surroundings shared by every App:
 
 - **Build:** use a small, independent App contract with HTTP, schedules, data capabilities, and optional Platform tools.

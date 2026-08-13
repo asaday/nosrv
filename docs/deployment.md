@@ -20,8 +20,8 @@ The Platform is an additional execution environment for the independent nosrv Ap
 
 ## Delegation boundary
 
-| Target             | nosrv CLI generates or owns                                                           | Target runtime, operator, or official CLI owns                                         | Status               |
-| ------------------ | ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | -------------------- |
+| Target             | nosrv CLI generates or owns                                                           | Target runtime, operator, or official CLI owns                                        | Status               |
+| ------------------ | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | -------------------- |
 | nosrv Platform     | Deterministic Artifact, authenticated upload, digest verification, version activation | Self-hosted routing and process supervision                                           | Implemented MVP      |
 | Cloudflare Workers | Worker entrypoint, Wrangler config, asset and capability bindings                     | Authentication, build/upload, resource resolution, deployment                         | Implemented          |
 | Google Functions   | Staging bundle, HTTP entrypoint, packaged assets, command arguments                   | Authentication, project selection, build/upload, function create/update               | Implemented for HTTP |
@@ -81,13 +81,13 @@ The self-hosted Platform chooses capability providers globally. Its development 
 App SQLite database and KV files plus filesystem storage. Horizontally scaled installations use
 PostgreSQL, Redis, and S3 or GCS storage instead.
 
-| Target           | Before deploying capability-backed code                                                                                                                                                                              |
-| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Target           | Before deploying capability-backed code                                                                                                                                                                                                                                         |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | nosrv Platform   | Select Platform-wide providers. The one-node development profile supplies SQLite database and KV plus filesystem storage; replicated installations require operator-provided PostgreSQL, Redis, and S3 or GCS. Configure named external tools and their policy on the Platform. |
-| Cloudflare       | Create/select the Workers KV namespace, R2 bucket, or D1 database; place the required name or ID in `providers.cloudflare`; configure Wrangler secrets separately.                                                   |
-| Google Functions | Create/select the Firestore database and GCS bucket, or a reachable PostgreSQL database; grant the required roles/network access; configure runtime environment values or Secret Manager mappings separately.        |
-| AWS Lambda       | Create/select the DynamoDB table and S3 bucket, or a reachable PostgreSQL database; add least-privilege permissions/network access; configure runtime environment values or Secrets Manager integration separately.  |
-| Azure Functions  | Create/select the Function App, host storage, Blob container, Cosmos DB database/container, or reachable PostgreSQL database; configure managed identity/RBAC, networking, and App settings or Key Vault references. |
+| Cloudflare       | Create/select the Workers KV namespace, R2 bucket, or D1 database; place the required name or ID in `providers.cloudflare`; configure Wrangler secrets separately.                                                                                                              |
+| Google Functions | Create/select the Firestore database and GCS bucket, or a reachable PostgreSQL database; grant the required roles/network access; configure runtime environment values or Secret Manager mappings separately.                                                                   |
+| AWS Lambda       | Create/select the DynamoDB table and S3 bucket, or a reachable PostgreSQL database; add least-privilege permissions/network access; configure runtime environment values or Secrets Manager integration separately.                                                             |
+| Azure Functions  | Create/select the Function App, host storage, Blob container, Cosmos DB database/container, or reachable PostgreSQL database; configure managed identity/RBAC, networking, and App settings or Key Vault references.                                                            |
 
 Current deployment generation:
 

@@ -2,6 +2,13 @@ import { createInterface } from "node:readline/promises";
 import { orderedPackages, run } from "./release-packages.js";
 
 let confirmed = process.argv.includes("--confirm");
+const authentication = run("npm", ["whoami"], { capture: true, allowFailure: true });
+if (authentication.status !== 0) {
+  console.error("Cannot publish because npm authentication failed.");
+  console.error("Run `npm login`, verify with `npm whoami`, then run `npm run publish` again.");
+  process.exit(1);
+}
+
 const packages = orderedPackages();
 const pending = [];
 const published = [];
@@ -63,3 +70,8 @@ for (const pkg of pending) {
 }
 
 console.log(`\nPublished ${pending.length} package versions.`);
+const verificationPackage = packages[0];
+console.log("\nVerify the published version from npm Registry:");
+console.log(
+  `npm view ${verificationPackage.manifest.name}@${verificationPackage.manifest.version} version --registry=https://registry.npmjs.org/`,
+);

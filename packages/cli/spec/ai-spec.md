@@ -153,7 +153,19 @@ const items = await ctx.db.select("items", {
 });
 ```
 
+Pass mutation arguments in these exact positions: `update(table, values, { where })` and `delete(table, { where })`. The `where` condition is part of the options object, not a separate argument and not part of the updated values:
+
+```ts
+const updated = await ctx.db.update(
+  "items",
+  { status: "done", updatedAt: new Date().toISOString() },
+  { where: { id: itemId } },
+);
+const deleted = await ctx.db.delete("items", { where: { id: itemId } });
+```
+
 Do not infer database option names from an ORM or another query API; use the exact nosrv option names shown here and in the [`ctx` API reference](./context-api.md). Portable columns are `text`, `number`, `integer`, `boolean`, `bytes`, and `timestamp`; timestamp values are ISO 8601 strings.
+
 - Database mutations return a `DatabaseExecuteResult` object, not a boolean. Check `result.rowsAffected === 0` to detect that `update` or `delete` matched no rows; do not test the result object itself for truthiness. Do not issue a separate `select` only to test existence before a mutation, because that adds a query and creates a race between the check and the mutation.
 - Structured conditions support equality plus `eq`, `ne`, `lt`, `lte`, `gt`, `gte`, `in`, and `notIn`. Use non-empty `$and` and `$or` arrays for grouped conditions. Portable mutations reject empty `where` objects. Table and column identifiers are validated rather than interpolated unchecked.
 - `ensureTable` creates missing tables and rejects incompatible existing column, type, required, primary-key, or unique-constraint definitions; it does not perform migrations. `ensureIndex` creates a named index and rejects a conflicting definition. Transactions are atomic on SQLite and PostgreSQL; D1 rejects them because this API does not expose D1 Sessions or Durable Objects.

@@ -142,7 +142,18 @@ When routes live in a typed registration function, `createRouter(registerRoutes)
 - Use `router.mount(prefix, app)` to compose an App or sub-router. Mounted Apps receive the path with the prefix removed, and the runtime validates their declared capabilities before dispatch.
 - Routes, middleware, and mounts run in registration order. Put public routes before an authentication middleware and protected routes after it; the first matching route or mount that returns a response ends dispatch.
 - Use `router.use(path?, ...middleware)` to scope middleware to a path subtree. Middleware may `await next()` to process the downstream response; route methods also accept multiple middleware-style handlers.
-- Use `ctx.db.ensureTable`, `ensureIndex`, `insert`, `insertMany`, `upsert`, `select`, `count`, `exists`, `update`, `delete`, and `transaction` for portable relational work. Use `select({ fields: [...] })` to project only the required columns and `limit` plus `offset` or ordered comparison conditions for pagination. Portable columns are `text`, `number`, `integer`, `boolean`, `bytes`, and `timestamp`; timestamp values are ISO 8601 strings.
+- Use `ctx.db.ensureTable`, `ensureIndex`, `insert`, `insertMany`, `upsert`, `select`, `count`, `exists`, `update`, `delete`, and `transaction` for portable relational work. Pass select options as the second argument after the table name. Use `fields` to project only the required columns, `orderBy` entries with `field` and optional `direction` to sort rows, and `limit` plus `offset` or ordered comparison conditions for pagination:
+
+```ts
+const items = await ctx.db.select("items", {
+  fields: ["id", "title", "status", "updatedAt"],
+  where: { status: "active" },
+  orderBy: [{ field: "updatedAt", direction: "desc" }],
+  limit: 50,
+});
+```
+
+Do not infer database option names from an ORM or another query API; use the exact nosrv option names shown here and in the [`ctx` API reference](./context-api.md). Portable columns are `text`, `number`, `integer`, `boolean`, `bytes`, and `timestamp`; timestamp values are ISO 8601 strings.
 - Database mutations return a `DatabaseExecuteResult` object, not a boolean. Check `result.rowsAffected === 0` to detect that `update` or `delete` matched no rows; do not test the result object itself for truthiness. Do not issue a separate `select` only to test existence before a mutation, because that adds a query and creates a race between the check and the mutation.
 - Structured conditions support equality plus `eq`, `ne`, `lt`, `lte`, `gt`, `gte`, `in`, and `notIn`. Use non-empty `$and` and `$or` arrays for grouped conditions. Portable mutations reject empty `where` objects. Table and column identifiers are validated rather than interpolated unchecked.
 - `ensureTable` creates missing tables and rejects incompatible existing column, type, required, primary-key, or unique-constraint definitions; it does not perform migrations. `ensureIndex` creates a named index and rejects a conflicting definition. Transactions are atomic on SQLite and PostgreSQL; D1 rejects them because this API does not expose D1 Sessions or Durable Objects.

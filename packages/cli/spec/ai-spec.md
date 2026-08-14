@@ -142,6 +142,10 @@ When routes live in a typed registration function, `createRouter(registerRoutes)
 - Use `router.mount(prefix, app)` to compose an App or sub-router. Mounted Apps receive the path with the prefix removed, and the runtime validates their declared capabilities before dispatch.
 - Routes, middleware, and mounts run in registration order. Put public routes before an authentication middleware and protected routes after it; the first matching route or mount that returns a response ends dispatch.
 - Use `router.use(path?, ...middleware)` to scope middleware to a path subtree. Middleware may `await next()` to process the downstream response; route methods also accept multiple middleware-style handlers.
+- Cookie helpers serialize and parse HTTP cookies; session storage and authentication remain application or service concerns.
+
+## Database
+
 - Use `ctx.db.ensureTable`, `ensureIndex`, `insert`, `insertMany`, `upsert`, `select`, `count`, `exists`, `update`, `delete`, and `transaction` for portable relational work. Pass select options as the second argument after the table name. Use `fields` to project only the required columns, `orderBy` entries with `field` and optional `direction` to sort rows, and `limit` plus `offset` or ordered comparison conditions for pagination:
 
 ```ts
@@ -171,7 +175,6 @@ Do not infer database option names from an ORM or another query API; use the exa
 - `ensureTable` creates missing tables and rejects incompatible existing column, type, required, primary-key, or unique-constraint definitions; it does not perform migrations. `ensureIndex` creates a named index and rejects a conflicting definition. Transactions are atomic on SQLite and PostgreSQL; D1 rejects them because this API does not expose D1 Sessions or Durable Objects.
 - Use `ctx.db.currentTimestamp()` when distributed coordination needs the database server's shared clock instead of an individual runtime instance's clock.
 - Use `ctx.db.sql.query()` and `ctx.db.sql.execute()` only as an explicit SQL escape hatch. Ordered parameters use `?` on every provider, but SQL syntax, schema portability, and result normalization are then App responsibilities.
-- Cookie helpers serialize and parse HTTP cookies; session storage and authentication remain application or service concerns.
 
 ## Scheduled tasks
 

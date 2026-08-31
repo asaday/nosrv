@@ -200,7 +200,7 @@ schedules:
     cron: "0 3 * * *"
 ```
 
-- Make work idempotent: providers may duplicate a trigger, and the Node.js MVP may miss one while an App is stopped.
+- Make work idempotent: providers may duplicate a trigger, and the Node.js runtime may miss one while an App is stopped.
 - `timezone` accepts an IANA time-zone identifier. When omitted, Node.js and nosrv Platform use the runtime process or OS local time zone. Specify `UTC` when UTC behavior must be portable and explicit. Some public-cloud schedulers cannot apply an App-specific time zone.
 - Portable schedules use five standard cron fields with numeric values, `*`, lists, ranges, and steps; English month and weekday names are also accepted. Schedule names and normalized cron expressions must be unique within an App.
 - Keep scheduled work short; do not use it as a long-running worker.
@@ -299,7 +299,7 @@ providers:
 
 Local `ctx.kv` persists to `.nosrv/kv.sqlite`. nosrv does not expose a disposable in-memory KV provider; code using the runtime as a library may inject another `KV` implementation explicitly.
 
-The Deployment Target is selected outside application code. It may be a Standalone Server, a public FaaS provider, or a self-hosted nosrv Platform. See the [nosrv Platform documentation](https://github.com/asaday/nosrv-platform/blob/main/docs/platform.md) for the shared deployment and platform terminology.
+The Deployment Target is selected outside application code. It may be a Standalone Server, a public FaaS provider, or a self-hosted nosrv Platform. See the [Deployment Guide](./deployment.md) for the shared deployment and Platform terminology.
 
 ## Frontend selection
 

@@ -676,4 +676,4 @@ The context API makes the application boundary portable; it does not make every 
 - External HTTP APIs can be called with the standard `fetch` API and do not require a context capability.
 - Direct filesystem, process, worker, VM, module-loader, raw-network, and SQLite Node builtins are rejected in portable Artifacts.
 
-See the [AI Application Specification](./ai-spec.md) for application structure and portability rules, the [Deployment Design](./deployment.md) for provider responsibilities, and the [Platform documentation](./platform.md) for self-hosted runtime behavior.
+See the [AI Application Specification](./ai-spec.md) for application structure and portability rules and the [Deployment Guide](./deployment.md) for provider responsibilities and self-hosted Platform behavior.

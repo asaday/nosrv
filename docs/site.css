@@ -505,11 +505,6 @@ h2 {
   color: #b9c9bf;
   text-underline-offset: 4px;
 }
-.prototype-note {
-  margin: 34px 0 0;
-  color: #708278;
-  font-size: 11px;
-}
 footer {
   min-height: 100px;
   padding: 0 max(24px, calc((100vw - 1180px) / 2));

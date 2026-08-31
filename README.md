@@ -116,7 +116,7 @@ The application model is the center of nosrv. Local Node.js, public-cloud adapte
 
 See [`docs/deployment.md`](docs/deployment.md) for the implemented deployment flows and delegation boundaries.
 
-nosrv applications may run as standalone Node.js servers or be deployed to a self-hosted **nosrv Platform** that manages multiple applications. In the Platform architecture, a **Runtime Host** starts and supervises application processes; it is not called a runner. See the [nosrv Platform documentation](https://github.com/asaday/nosrv-platform/blob/main/docs/platform.md) for the shared terminology and architecture.
+nosrv applications may run as standalone Node.js servers or be deployed to a self-hosted **nosrv Platform** that manages multiple applications. In the Platform architecture, a **Runtime Host** starts and supervises application processes; it is not called a runner. See the [deployment guide](docs/deployment.md) for the shared terminology and architecture.
 
 ## Application contract
 
@@ -373,7 +373,7 @@ Authentication is usually enough for an HTTP-only App such as `examples/hello`. 
 
 nosrv currently generates bindings and adapter configuration, but it does not generally create these cloud data resources, migrate schemas, or grant runtime IAM permissions. Local Node.js and the one-node Platform development profile provision SQLite database and KV files plus filesystem object storage. A replicated Platform requires operator-provided PostgreSQL, Redis, and S3 or GCS. For public clouds, create or select the resource first, put only its non-secret identifier in `nosrv.yaml`, and grant the deployed Worker or function the minimum required access. Resource names, IDs, regions, retention, backups, billing, and deletion remain provider-owned operational choices.
 
-The Platform operator may replace the default app-local KV and DB backends globally with shared Redis and PostgreSQL. Apps still request only `ctx.kv` or `ctx.db`; they do not select the Platform provider. See [Platform-wide capability backends](https://github.com/asaday/nosrv-platform/blob/main/docs/platform.md#platform-wide-capability-backends).
+The Platform operator may replace the default app-local KV and DB backends globally with shared Redis and PostgreSQL. Apps still request only `ctx.kv` or `ctx.db`; they do not select the Platform provider. See the [deployment guide](docs/deployment.md) for Platform capability backends.
 
 An App using `ctx.db` also owns its SQL portability boundary. Node.js supports SQLite or PostgreSQL, Cloudflare uses D1, and Google/Lambda support PostgreSQL. Do not assume that schema creation or SQL dialect differences are handled during deployment.
 
@@ -402,7 +402,7 @@ schedules:
     cron: "0 3 * * *"
 ```
 
-Schedules use unique five-field cron expressions. An optional top-level IANA `timezone` applies to every schedule; otherwise local Node.js and nosrv Platform use the runtime process or OS local time zone. Specify `timezone: UTC` when UTC behavior must be explicit. Cloudflare Cron Triggers are UTC-only, and Azure Timer timezone is controlled by the Function App host, so those targets reject a non-UTC App timezone rather than silently changing its meaning. Google and Lambda scheduled adapters exist, but their deployment commands do not yet provision Cloud Scheduler or EventBridge resources and reject Apps that declare schedules. A trigger may be duplicated by a provider or missed while a Node.js App is stopped, so scheduled work must be idempotent and must not rely on this MVP as a durable job queue. Overlapping runs of the same schedule are suppressed within one Node.js App process. Scheduled handlers are intended for short background work, not long-running job processing, and receive `ctx.user` as `null` because there is no request identity.
+Schedules use unique five-field cron expressions. An optional top-level IANA `timezone` applies to every schedule; otherwise local Node.js and nosrv Platform use the runtime process or OS local time zone. Specify `timezone: UTC` when UTC behavior must be explicit. Cloudflare Cron Triggers are UTC-only, and Azure Timer timezone is controlled by the Function App host, so those targets reject a non-UTC App timezone rather than silently changing its meaning. Google and Lambda scheduled adapters exist, but their deployment commands do not yet provision Cloud Scheduler or EventBridge resources and reject Apps that declare schedules. A trigger may be duplicated by a provider or missed while a Node.js App is stopped, so scheduled work must be idempotent and must not treat the scheduler as a durable job queue. Overlapping runs of the same schedule are suppressed within one Node.js App process. Scheduled handlers are intended for short background work, not long-running job processing, and receive `ctx.user` as `null` because there is no request identity.
 
 ### Standalone Server
 
@@ -410,9 +410,9 @@ The Node.js runtime can host one nosrv App as an independent HTTP server. This i
 
 ### nosrv Platform
 
-The self-hosted Platform MVP is nosrv's standard multi-application execution environment. It demonstrates that the portable application contract is sufficient not only for provider adapters, but also for building a managed self-hosted runtime. Its control plane manages deployments and configuration, its gateway routes requests, and its Runtime Host starts and supervises App Instances.
+The self-hosted Platform is nosrv's standard multi-application execution environment. It demonstrates that the portable application contract is sufficient not only for provider adapters, but also for building a managed self-hosted runtime. Its control plane manages deployments and configuration, its gateway routes requests, and its Runtime Host starts and supervises App Instances.
 
-The development MVP includes a management dashboard at `/_platform/ui/` for opening routes, starting, stopping, restarting, deleting, viewing recent instance logs, and rolling back versions.
+The development setup includes a management dashboard at `/_platform/ui/` for opening routes, starting, stopping, restarting, deleting, viewing recent instance logs, and rolling back versions.
 
 Declare the common App identity and optional Platform route in `nosrv.yaml`:
 
@@ -445,13 +445,13 @@ is rejected, deploy removes it, signs in again, and retries the upload once. Exp
 
 The command builds a temporary immutable Artifact, uploads it, and removes the temporary files. The Platform verifies its SHA-256 digest, copies it into Platform storage, activates it, and keeps prior versions for rollback. `nosrv build` and `nosrv run` remain available for explicit inspection and production-equivalent local verification.
 
-For rapid local iteration, an operator can mount a trusted source workspace into the Platform, configure `paths.apps`, add the App `name` and optional `route` to its `nosrv.yaml`, and use `nosrv link <platform-path>`. Linked source changes are watched and restarted automatically; `nosrv restart <name>` remains available for a manual reload. The Runtime Host also restarts unexpected exits with bounded backoff and keeps rotated persistent logs. Linked Apps intentionally have no versions or rollback history; see [Linked Apps for local iteration](https://github.com/asaday/nosrv-platform/blob/main/docs/platform.md#linked-apps-for-local-iteration).
+For rapid local iteration, an operator can mount a trusted source workspace into the Platform, configure `paths.apps`, add the App `name` and optional `route` to its `nosrv.yaml`, and use `nosrv link <platform-path>`. Linked source changes are watched and restarted automatically; `nosrv restart <name>` remains available for a manual reload. The Runtime Host also restarts unexpected exits with bounded backoff and keeps rotated persistent logs. Linked Apps intentionally have no versions or rollback history.
 
-The CLI also exposes `list`, `info`, `start`, `stop`, `restart`, `logs`, `versions`, `activate`, `secrets`, `shared`, and `delete`. Management results support `--json` for agents and scripts; deletion additionally requires `--yes`. See [CLI management](https://github.com/asaday/nosrv-platform/blob/main/docs/platform.md#cli-management).
+The CLI also exposes `list`, `info`, `start`, `stop`, `restart`, `logs`, `versions`, `activate`, `secrets`, `shared`, and `delete`. Management results support `--json` for agents and scripts; deletion additionally requires `--yes`.
 
 Portable Artifact builds reject direct access to sensitive Node builtins such as `fs`, `child_process`, and raw networking. Use declared nosrv capabilities for portable services. Self-hosted Apps may declare absolute `permissions.filesystem.read` and `write` paths, and `permissions.childProcess: true`, while retaining Node's Permission Model, or use `permissions: "*"` only for fully trusted administration code. The `allowUnrestrictedApps` Platform setting gates this unrestricted form. This policy reduces accidental cross-service access but is not a substitute for an OS-level sandbox when executing untrusted code.
 
-This Platform is an additional deployment target, not a requirement or a full container orchestration system. Applications that outgrow its lightweight process model can move to dedicated containers or specialized orchestration while retaining the nosrv application boundary. See the [nosrv Platform documentation](https://github.com/asaday/nosrv-platform/blob/main/docs/platform.md).
+This Platform is an additional deployment target, not a requirement or a full container orchestration system. Applications that outgrow its lightweight process model can move to dedicated containers or specialized orchestration while retaining the nosrv application boundary. See the [deployment guide](docs/deployment.md) for the implemented Platform flow.
 
 ### Cloudflare Workers
 

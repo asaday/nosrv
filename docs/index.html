@@ -131,7 +131,7 @@
   requires: { db: <span class="value">true</span> },
 
   <span class="kw">async</span> fetch(request, ctx) {
-    <span class="kw">const</span> rows = <span class="kw">await</span> ctx.db.query(
+    <span class="kw">const</span> { rows } = <span class="kw">await</span> ctx.db.sql.query(
       <span class="str">"SELECT * FROM notes"</span>,
     );
     <span class="kw">return</span> Response.json(rows);
@@ -215,13 +215,16 @@
         </div>
         <div class="cta-links">
           <a class="button light" data-repo-link href="../">Explore the repository</a>
-          <a class="text-link" data-spec-link href="./ai-spec.md">Read the App specification →</a>
-          <a class="text-link" href="./context-api.md">Browse the ctx API →</a>
-          <a class="text-link" href="./router-api.md">Browse the Router API →</a>
+          <a class="text-link" data-doc-path="docs/ai-spec.md" href="./ai-spec.md"
+            >Read the App specification →</a
+          >
+          <a class="text-link" data-doc-path="docs/context-api.md" href="./context-api.md"
+            >Browse the ctx API →</a
+          >
+          <a class="text-link" data-doc-path="docs/router-api.md" href="./router-api.md"
+            >Browse the Router API →</a
+          >
         </div>
-        <p class="prototype-note">
-          nosrv is currently a v0.1 prototype. APIs and configuration may change.
-        </p>
       </section>
     </main>
 

@@ -22,7 +22,7 @@ The Platform is an additional execution environment for the independent nosrv Ap
 
 | Target             | nosrv CLI generates or owns                                                           | Target runtime, operator, or official CLI owns                                        | Status               |
 | ------------------ | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | -------------------- |
-| nosrv Platform     | Deterministic Artifact, authenticated upload, digest verification, version activation | Self-hosted routing and process supervision                                           | Implemented MVP      |
+| nosrv Platform     | Deterministic Artifact, authenticated upload, digest verification, version activation | Self-hosted routing and process supervision                                           | Implemented          |
 | Cloudflare Workers | Worker entrypoint, Wrangler config, asset and capability bindings                     | Authentication, build/upload, resource resolution, deployment                         | Implemented          |
 | Google Functions   | Staging bundle, HTTP entrypoint, packaged assets, command arguments                   | Authentication, project selection, build/upload, function create/update               | Implemented for HTTP |
 | AWS Lambda         | Staging bundle, handler, assets, SAM template                                         | Authentication, artifact build/upload, CloudFormation, IAM and resource create/update | Implemented for HTTP |
@@ -171,7 +171,7 @@ Platform is the default deployment target. The CLI prints the selected target, d
 
 With the default Docker Compose development setup, `nosrv deploy` defaults to
 `http://127.0.0.1:3100` and authenticates as the configured local administrator. The optional
-The [`compose.oidc.yaml`](https://github.com/asaday/nosrv-platform/blob/main/compose.oidc.yaml) stack permits any authenticated OIDC user to deploy while the App manager policy is
+`compose.oidc.yaml` stack in the separately maintained Platform repository permits any authenticated OIDC user to deploy while the App manager policy is
 empty. Adding an `app_manager` policy rule restricts deployment to an authenticated `admin` or
 `app_manager`; admin and viewer policy rules do not enable this restriction.
 

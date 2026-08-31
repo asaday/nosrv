@@ -9,8 +9,10 @@ document.querySelectorAll("[data-repo-link]").forEach((link) => {
   link.href = repositoryUrl;
 });
 
-document.querySelectorAll("[data-spec-link]").forEach((link) => {
-  link.href = isGitHubPages ? `${repositoryUrl}/blob/main/docs/ai-spec.md` : "./ai-spec.md";
+document.querySelectorAll("[data-doc-path]").forEach((link) => {
+  if (isGitHubPages) {
+    link.href = `${repositoryUrl}/blob/main/${link.dataset.docPath}`;
+  }
 });
 
 document.querySelectorAll("[data-create-command]").forEach((element) => {

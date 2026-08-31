@@ -63,12 +63,6 @@ npx nosrv dev
 npx nosrv deploy --target cloudflare
 ```
 
-Pin a version for repeatable use:
-
-```bash
-npx nosrv@0.1.1 create my-app
-```
-
 The generated project contains an `AGENTS.md` with the essential portability rules.
 
 ## Self-host it
@@ -578,7 +572,7 @@ npm run deploy
 
 ## AI coding agents
 
-The canonical application contract is [`docs/ai-spec.md`](docs/ai-spec.md), with the complete runtime context documented in [`docs/context-api.md`](docs/context-api.md) and the Router API in [`docs/router-api.md`](docs/router-api.md). Generated projects include a concise `AGENTS.md`, and this repository includes development instructions in [`AGENTS.md`](AGENTS.md), runnable examples, and a repository-local `build-nosrv-app` Skill under `.agents/skills`.
+The canonical application contract is [`docs/ai-spec.md`](packages/cli/spec/ai-spec.md), with the complete runtime context documented in [`docs/context-api.md`](docs/context-api.md) and the Router API in [`docs/router-api.md`](docs/router-api.md). Generated projects include a concise `AGENTS.md`, and this repository includes development instructions in [`AGENTS.md`](AGENTS.md), runnable examples, and a repository-local `build-nosrv-app` Skill under `.agents/skills`.
 
 A self-contained [`Agent Plugins`](https://agent-plugins.org/) package is available under `.agents/plugins/plugins/nosrv`. It contains the `build-nosrv-app` Skill, its contract summary, and implementation patterns for use outside this source checkout. Clients that support Agent Plugins can load that directory as a plugin. Installation, updates, and Skill invocation remain client-specific; start a new agent session after installing it.
 
